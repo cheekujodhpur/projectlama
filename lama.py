@@ -3,10 +3,12 @@
 import sys
 from game import Deck, Players
 
+
 def run(deck, players):
     # set up things
-    print( deck )
-    print( players )
+    print(deck)
+    print(players)
+
 
 if __name__ == "__main__":
 
@@ -16,4 +18,4 @@ if __name__ == "__main__":
         n_players = int(sys.argv[1])
     with Deck() as deck:
         with Players(n_players) as players:
-            run(deck, players) 
+            run(deck, players)

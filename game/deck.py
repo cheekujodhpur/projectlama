@@ -9,4 +9,4 @@ class Deck:
         pass
 
     def __str__(self):
-        return( "I am Deck class" )
+        return("I am Deck class")
