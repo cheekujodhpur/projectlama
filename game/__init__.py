@@ -1,2 +1,3 @@
-from .players import *
+from .core import *
 from .deck import *
+from .players import *

@@ -1,4 +1,4 @@
-from .utils import nread
+from .utils import nread, prompt
 
 
 class Player:
@@ -23,11 +23,11 @@ class Player:
         if top_card not in visible and nread(top_card) not in visible:
             self.draw(deck)
             return
-        print(f"Player{self.id} playing...")
-        print("You have the following options:")
-        print(visible)
-        print(f"to be played on {top_card}")
-        choice = input("llama> ")
+        u_out = f"Player{self.id} playing...\n\
+You have the following options:\n\
+{visible}\n\
+to be played on {top_card}"
+        choice = prompt(u_out)
         if not choice.isdigit():
             print("Error: Input should be a digit")
             self.play(deck)
@@ -38,28 +38,3 @@ class Player:
             self.play(deck)
             return
         deck.discard(self.delete(int(choice)))
-
-
-class Players:
-    def __init__(self, n_players):
-        self.n = n_players
-        self.players = [Player(i + 1) for i in range(self.n)]
-
-    def __enter__(self):
-        print(f"Initialised with {self.n} players...")
-        return self
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        pass
-
-    def __str__(self):
-        return f"{self.n} players are playing L.A.M.A."
-
-    def draw(self, deck):
-        for i in range(6):
-            for player in self.players:
-                player.draw(deck)
-
-    def play(self, deck):
-        for player in self.players:
-            player.play(deck)

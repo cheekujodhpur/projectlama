@@ -1,13 +1,9 @@
 #! /usr/bin/env python
 import sys
-from game import Deck, Players
+from game import Game
 
 
 def run(deck, players):
-
-    # distribute the hand
-    players.draw(deck)
-    deck.start()
 
     while True:
         # print deck status
@@ -26,12 +22,6 @@ def run(deck, players):
 
 if __name__ == "__main__":
 
-    # default
-    n_players = 2
-    if len(sys.argv) > 1 and \
-            sys.argv[1].isdigit() and \
-            (6 >= int(sys.argv[1]) >= 2):
-        n_players = int(sys.argv[1])
-    with Deck() as deck:
-        with Players(n_players) as players:
-            run(deck, players)
+    with Game() as game:
+        game.init()
+        game.run()
