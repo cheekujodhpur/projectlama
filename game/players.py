@@ -5,7 +5,11 @@ class Player:
     def __init__(self, sno, auto=False):
         self.id = sno
         self.auto = auto
+        self.active = True
         self.hand = []
+
+    def activate(self):
+        self.active = True
 
     def draw(self, deck):
         self.hand.append(deck.main_pile.pop())
@@ -18,23 +22,40 @@ class Player:
             i = i + 1
 
     def play(self, deck):
-        visible = list(map(nread, self.hand))
-        top_card = nread(deck.discard_pile[-1])
-        if top_card not in visible and nread(top_card) not in visible:
+        # Return if folded
+        if not self.active:
+            return True
+
+        print(deck)
+        top_card = deck.top_card()
+        hand = list(map(nread, self.hand))
+        # check if unplayable and draw if so
+        if not deck.playable(hand):
+            if not len(deck.main_pile):
+                return False  # round ends
             self.draw(deck)
-            return
+            print(f"Player{self.id} cannot play. They draw...\n")
+            return True
+
+        # Now we are asking for choice
         u_out = f"Player{self.id} playing...\n\
 You have the following options:\n\
-{visible}\n\
-to be played on {top_card}"
+{hand}\n\
+to be played on {nread(top_card)}"
         choice = prompt(u_out)
+
+        # play the choice
         if not choice.isdigit():
             print("Error: Input should be a digit")
-            self.play(deck)
-            return
-        if int(choice) not in visible or \
-                int(choice) not in [top_card, nread(top_card)]:
+            return self.play(deck)
+        if not deck.playable(int(choice)):
             print("Error: Invalid input")
-            self.play(deck)
-            return
+            return self.play(deck)
+        # We only reach here if we can actually play the choice
         deck.discard(self.delete(int(choice)))
+
+        # decide if it ends the round
+        if not len(self.hand):
+            return False
+
+        return True

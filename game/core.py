@@ -10,15 +10,18 @@ class Round:
         self.deck.start()
 
     def run(self, players):
-        # init draw
+        # init draw and activity
         for i in range(6):
             for player in players:
                 player.draw(self.deck)
+                player.activate()
 
         while True:
-            print(self.deck)
             for player in players:
-                player.play(self.deck)
+                # continue
+                cont = player.play(self.deck)
+                if not cont:
+                    return
 
 
 class Game:
@@ -40,6 +43,8 @@ class Game:
         self.players = [Player(i + 1) for i in range(n_players)]
 
     def run(self):
-        while True:
-            self.round = Round()
-            self.round.run(self.players)
+        # while True:
+        self.round = Round()
+        self.round.run(self.players)
+        # after any round is over, keep score
+        # self.score(self.players)
