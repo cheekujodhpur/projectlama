@@ -52,20 +52,27 @@ class Player:
         print(deck)
         top_card = deck.top_card()
         hand = list(map(nread, self.hand))
+        print(f"Player{self.id} has hand\n{hand}\n")
         # check if unplayable and draw if so
         if not deck.playable(hand):
             if not len(deck.main_pile):
                 return False  # round ends
-            self.draw(deck)
-            #TODO: Option to f here as well
-            print(f"Player{self.id} cannot play. They draw...\n")
-            return True
+            u_out = f"Player{self.id} cannot play. Draw(d) or Fold(f)"
+            choice = prompt(u_out)
+            if choice is "f" or choice is "F":
+                self.deactivate()
+                return True
+            elif choice is "d" or choice is "D":
+                print("They draw...")
+                self.draw(deck)
+                return True
+            else:
+                print("Error: Invalid input")
+                return self.play(deck)
 
         # Now we are asking for choice
         u_out = f"Player{self.id} playing...\n\
-You have the following options:\n\
-{hand}\n\
-to be played on {nread(top_card)}"
+You have to play on {nread(top_card)} or fold(f)"
         choice = prompt(u_out)
 
         # play the choice
