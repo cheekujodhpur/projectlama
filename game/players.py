@@ -5,14 +5,37 @@ class Player:
     def __init__(self, sno, auto=False):
         self.id = sno
         self.auto = auto
-        self.active = True
         self.hand = []
+        self.active = True
+        self.score = 0
+
+    def init(self):
+        self.hand = []
+        self.active = True
+
+    def deactivate(self):
+        self.active = False
 
     def activate(self):
         self.active = True
 
     def draw(self, deck):
         self.hand.append(deck.main_pile.pop())
+
+    def calc_score(self):
+        if not len(self.hand):
+            if not self.score:
+                self.score = 0
+            # TODO: Ideally the following should be a choice
+            elif self.score < 10:
+                self.score = self.score - 1
+            else:
+                self.score = self.score - 10
+        else:
+            hand = list(set(map(nread,self.hand)))
+            increment = sum(map(lambda x: x if x < 7 else 10, hand))
+            self.score = self.score + increment
+        return self.score
 
     def delete(self, n):
         i = 0
@@ -34,6 +57,7 @@ class Player:
             if not len(deck.main_pile):
                 return False  # round ends
             self.draw(deck)
+            #TODO: Option to f here as well
             print(f"Player{self.id} cannot play. They draw...\n")
             return True
 
@@ -46,8 +70,12 @@ to be played on {nread(top_card)}"
 
         # play the choice
         if not choice.isdigit():
-            print("Error: Input should be a digit")
-            return self.play(deck)
+            if choice is "f" or choice is "F":
+                self.deactivate()
+                return True
+            else:
+                print("Error: Input should be a digit or f to fold")
+                return self.play(deck)
         if not deck.playable(int(choice)):
             print("Error: Invalid input")
             return self.play(deck)
