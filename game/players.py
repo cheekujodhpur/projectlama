@@ -1,4 +1,4 @@
-from .utils import nread, prompt
+from .utils import prompt
 
 
 class Player:
@@ -32,18 +32,18 @@ class Player:
             else:
                 self.score = self.score - 10
         else:
-            hand = list(set(map(nread,self.hand)))
-            increment = sum(map(lambda x: x if x < 7 else 10, hand))
+            increment = sum(map(lambda x: x if x < 7 else 10, self.hand))
             self.score = self.score + increment
         return self.score
 
     def delete(self, n):
         i = 0
         while i < len(self.hand):
-            if nread(self.hand[i]) == n:
+            if self.hand[i] == n:
                 return self.hand.pop(i)
             i = i + 1
 
+# TODO: This returns false if player is not active or if deck is done, the check for the latter should happen outside
     def play(self, deck):
         # Return if folded
         if not self.active:
@@ -51,12 +51,13 @@ class Player:
 
         print(deck)
         top_card = deck.top_card()
-        hand = list(map(nread, self.hand))
-        print(f"Player{self.id} has hand\n{hand}\n")
+        print(f"Player{self.id} has hand\n{self.hand}\n")
         # check if unplayable and draw if so
-        if not deck.playable(hand):
+        if not deck.playable(self.hand):
             if not len(deck.main_pile):
-                return False  # round ends
+                self.deactivate()
+                return True
+            # TODO: Can't draw if only player left
             u_out = f"Player{self.id} cannot play. Draw(d) or Fold(f)"
             choice = prompt(u_out)
             if choice is "f" or choice is "F":
@@ -72,7 +73,7 @@ class Player:
 
         # Now we are asking for choice
         u_out = f"Player{self.id} playing...\n\
-You have to play on {nread(top_card)} or fold(f)"
+You have to play on {top_card} or fold(f)"
         choice = prompt(u_out)
 
         # play the choice
@@ -83,7 +84,7 @@ You have to play on {nread(top_card)} or fold(f)"
             else:
                 print("Error: Input should be a digit or f to fold")
                 return self.play(deck)
-        if not deck.playable(int(choice)):
+        if choice not in self.hand or not deck.playable(int(choice)):
             print("Error: Invalid input")
             return self.play(deck)
         # We only reach here if we can actually play the choice

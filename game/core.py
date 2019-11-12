@@ -23,7 +23,7 @@ class Round:
                 cont = player.play(self.deck)
                 if not cont:
                     return
-            if not sum(map(lambda x:x.active, players)):
+            if not sum(map(lambda x: x.active, players)):
                 return
 
 
@@ -65,6 +65,6 @@ class Game:
             for player in self.players:
                 print(f"Player{player.id} has score {self.score[player.id]}...\n")
             if over:
-                winner = sorted(self.players, key=lambda x:self.score[x.id])[0]
+                winner = sorted(self.players, key=lambda x: self.score[x.id])[0]
                 print(f"Player{winner.id} wins.\n")
                 break
