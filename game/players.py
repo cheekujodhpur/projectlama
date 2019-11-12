@@ -44,7 +44,7 @@ class Player:
                 return self.hand.pop(i)
             i = i + 1
 
-# TODO: This returns false if player is not active or if deck is done, the check for the latter should happen outside
+    # TODO: break this function into smaller bits
     def play(self, deck):
         # Return if folded
         if not self.active:
