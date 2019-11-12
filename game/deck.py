@@ -23,7 +23,12 @@ class Deck:
 
     def playable(self, cards):
         top_card = self.top_card()
-        return top_card in cards or plus_one(top_card) in cards
+        if isinstance(cards, list):
+            return top_card in cards or plus_one(top_card) in cards
+        elif isinstance(cards, int):
+            return cards in [top_card, plus_one(top_card)]
+        else:
+            raise TypeError("Only list or int")
 
     def __str__(self):
         out = f"The top card is {self.discard_pile[-1]}"

@@ -32,7 +32,8 @@ class Player:
             else:
                 self.score = self.score - 10
         else:
-            increment = sum(map(lambda x: x if x < 7 else 10, self.hand))
+            uniq_hand = list(set(self.hand))
+            increment = sum(map(lambda x: x if x < 7 else 10, uniq_hand))
             self.score = self.score + increment
         return self.score
 
@@ -84,7 +85,7 @@ You have to play on {top_card} or fold(f)"
             else:
                 print("Error: Input should be a digit or f to fold")
                 return self.play(deck)
-        if choice not in self.hand or not deck.playable(int(choice)):
+        if not deck.playable(int(choice)):
             print("Error: Invalid input")
             return self.play(deck)
         # We only reach here if we can actually play the choice
