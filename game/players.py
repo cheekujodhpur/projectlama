@@ -85,7 +85,7 @@ You have to play on {top_card} or fold(f)"
             else:
                 print("Error: Input should be a digit or f to fold")
                 return self.play(deck)
-        if not deck.playable(int(choice)):
+        if (int(choice) not in self.hand) or (not deck.playable(int(choice))):
             print("Error: Invalid input")
             return self.play(deck)
         # We only reach here if we can actually play the choice
