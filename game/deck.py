@@ -24,7 +24,7 @@ class Deck:
     def playable(self, cards):
         top_card = self.top_card()
         if isinstance(cards, list):
-            return top_card in cards or plus_one(top_card) in cards
+            return ((top_card in cards) or (plus_one(top_card) in cards))
         elif isinstance(cards, int):
             return cards in [top_card, plus_one(top_card)]
         else:
