@@ -1,6 +1,9 @@
 from .deck import Deck
 from .players import Player
 from .utils import prompt
+from twisted.web import xmlrpc
+import random
+import string
 
 
 class Round:
@@ -28,14 +31,9 @@ class Round:
 
 
 class Game:
-    def __init__(self):
+    def __init__(self, game_id):
         self.history = []
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exception_type, exception_value, traceback):
-        pass
+        self.game_id = game_id
 
     def init(self):
         u_in = prompt("How many players?")
@@ -65,6 +63,26 @@ class Game:
             for player in self.players:
                 print(f"Player{player.id} has score {self.score[player.id]}...\n")
             if over:
-                winner = sorted(self.players, key=lambda x: self.score[x.id])[0]
+                winner = sorted(self.players,
+                                key=lambda x: self.score[x.id])[0]
                 print(f"Player{winner.id} wins.\n")
                 break
+
+
+class GameMaster(xmlrpc.XMLRPC):
+    def __init__(self):
+        self.games = {}
+        xmlrpc.XMLRPC.__init__(self)
+
+    def xmlrpc_open(self):
+        game_id = ''.join(
+            random.choices(
+                string.ascii_uppercase +
+                string.digits,
+                k=5))
+        g = Game(game_id)
+        self.games[game_id] = g
+        return game_id
+
+    def xmlrpc_validate(self, game_id):
+        return game_id in self.games
