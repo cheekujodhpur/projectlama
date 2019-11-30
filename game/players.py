@@ -44,3 +44,9 @@ class Player:
                 return self.hand.pop(i)
             i = i + 1
 
+
+class NetworkPlayer(Player):
+    def __init__(self, sno, token):
+        self.token = token
+        super().__init__(sno)
+

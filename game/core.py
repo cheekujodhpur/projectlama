@@ -1,7 +1,7 @@
 from .deck import Deck
-from .players import Player
+from .players import Player, NetworkPlayer
 from .utils import prompter
-from .constants import State, Prompt
+from .constants import State, Prompt, GameErrors
 from twisted.web import xmlrpc
 import random
 import string
@@ -10,6 +10,8 @@ import string
 class Game:
     def __init__(self):
         self.history = []
+        self.state = None
+        self.turn = None
 
     def init(self):
         self.state = State.GAME_BEGIN
@@ -146,6 +148,24 @@ class Game:
             info = self.get_info(prompt)
 
 
+class NetworkGame(Game):
+    def __init__(self, game_id):
+        self.game_id = game_id
+        self.players = []
+        super().__init__()
+
+    def add_player(self):
+        if len(self.players) < 6:
+            player_token = ''.join(
+                random.choices(
+                    string.ascii_uppercase +
+                    string.digits,
+                    k=5))
+            self.players.append(NetworkPlayer(len(self.players), player_token))
+            return player_token
+        else:
+            raise xmlrpc.Fault(GameErrors.GAME_FULL, f"Game {self.game_id} is full")
+
 class GameMaster(xmlrpc.XMLRPC):
     def __init__(self):
         self.games = {}
@@ -157,9 +177,25 @@ class GameMaster(xmlrpc.XMLRPC):
                 string.ascii_uppercase +
                 string.digits,
                 k=5))
-        g = Game(game_id)
+        g = NetworkGame(game_id)
         self.games[game_id] = g
         return game_id
 
-    def xmlrpc_validate(self, game_id):
-        return game_id in self.games
+    def xmlrpc_validate(self, game_id, player_token=None):
+        if game_id not in self.games:
+            return False
+        elif player_token is not None:
+            search = sum(map(lambda x:x.token == player_token, self.games[game_id].players))
+            if not search:
+                return False
+        return True
+
+    def xmlrpc_join(self, game_id):
+        return self.games[game_id].add_player()
+
+    def xmlrpc_query_state(self, game_id, player_token):
+        if not self.xmlrpc_validate(game_id, player_token=player_token):
+            raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
+        curr_state = self.games[game_id].state
+        if curr_state is None:
+            return f"Game has not begun yet. {len(self.games[game_id].players)} players have joined as of now."

@@ -10,3 +10,8 @@ class Prompt(Enum):
     NUM_PLAYERS = 0 # number of players
     FD = 1 # Player action draw/fold, cannot play
     PF = 2 # Player action play/fold, cannot draw
+
+class GameErrors(Enum):
+    GAME_FULL = 0 # Game is Full
+    INVALID_TOKEN = 1 # GameId, Token pair does not match
+
