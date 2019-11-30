@@ -1,4 +1,4 @@
-from .utils import prompt
+from .utils import prompter
 
 
 class Player:
@@ -11,7 +11,7 @@ class Player:
 
     def init(self):
         self.hand = []
-        self.active = True
+        self.activate()
 
     def deactivate(self):
         self.active = False
@@ -44,55 +44,3 @@ class Player:
                 return self.hand.pop(i)
             i = i + 1
 
-    # TODO: break this function into smaller bits
-    def play(self, deck):
-        # Return if folded
-        if not self.active:
-            return True
-
-        print(deck)
-        top_card = deck.top_card()
-        print(f"Player{self.id} has hand\n{self.hand}\n")
-        # check if unplayable and draw if so
-        if not deck.playable(self.hand):
-            if not len(deck.main_pile):
-                self.deactivate()
-                return True
-            # TODO: Can't draw if only player left
-            u_out = f"Player{self.id} cannot play. Draw(d) or Fold(f)"
-            choice = prompt(u_out)
-            if choice is "f" or choice is "F":
-                self.deactivate()
-                return True
-            elif choice is "d" or choice is "D":
-                print("They draw...")
-                self.draw(deck)
-                return True
-            else:
-                print("Error: Invalid input")
-                return self.play(deck)
-
-        # Now we are asking for choice
-        u_out = f"Player{self.id} playing...\n\
-You have to play on {top_card} or fold(f)"
-        choice = prompt(u_out)
-
-        # play the choice
-        if not choice.isdigit():
-            if choice is "f" or choice is "F":
-                self.deactivate()
-                return True
-            else:
-                print("Error: Input should be a digit or f to fold")
-                return self.play(deck)
-        if (int(choice) not in self.hand) or (not deck.playable(int(choice))):
-            print("Error: Invalid input")
-            return self.play(deck)
-        # We only reach here if we can actually play the choice
-        deck.discard(self.delete(int(choice)))
-
-        # decide if it ends the round
-        if not len(self.hand):
-            return False
-
-        return True
