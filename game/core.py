@@ -2,7 +2,7 @@ from .deck import Deck
 from .players import Player, NetworkPlayer
 from .utils import prompter
 from .constants import State, Prompt, GameErrors
-from twisted.web import xmlrpc
+from twisted.web import http, server, xmlrpc
 import random
 import string
 
@@ -171,7 +171,22 @@ class GameMaster(xmlrpc.XMLRPC):
         self.games = {}
         xmlrpc.XMLRPC.__init__(self)
 
-    def xmlrpc_open(self):
+    @staticmethod
+    def __apply_CORS_headers(request):
+        request.setHeader('Access-Control-Allow-Origin', '*')
+        request.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
+        request.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
+
+    def render_OPTIONS(self, request):
+        GameMaster.__apply_CORS_headers(request)
+        request.setResponseCode(http.OK)
+        request.write('OK'.encode('utf-8'))
+        request.finish()
+        return server.NOT_DONE_YET
+
+    @xmlrpc.withRequest
+    def xmlrpc_open(self, request):
+        GameMaster.__apply_CORS_headers(request)
         game_id = ''.join(
             random.choices(
                 string.ascii_uppercase +
@@ -181,7 +196,9 @@ class GameMaster(xmlrpc.XMLRPC):
         self.games[game_id] = g
         return game_id
 
-    def xmlrpc_validate(self, game_id, player_token=None):
+    @xmlrpc.withRequest
+    def xmlrpc_validate(self, request, game_id, player_token=None):
+        GameMaster.__apply_CORS_headers(request)
         if game_id not in self.games:
             return False
         elif player_token is not None:
@@ -190,10 +207,14 @@ class GameMaster(xmlrpc.XMLRPC):
                 return False
         return True
 
-    def xmlrpc_join(self, game_id):
+    @xmlrpc.withRequest
+    def xmlrpc_join(self, request, game_id):
+        GameMaster.__apply_CORS_headers(request)
         return self.games[game_id].add_player()
 
-    def xmlrpc_query_state(self, game_id, player_token):
+    @xmlrpc.withRequest
+    def xmlrpc_query_state(self, request, game_id, player_token):
+        GameMaster.__apply_CORS_headers(request)
         if not self.xmlrpc_validate(game_id, player_token=player_token):
             raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
         curr_state = self.games[game_id].state
