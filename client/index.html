@@ -15,8 +15,30 @@
     </head>
     <body>
         <div class="container">
-            <button type="button" id="btn-create-game" class="btn btn-default" value>Create Game</button>
-            <button type="button" id="btn-join-game" class="btn btn-primary" value>Join Game</button>
+            <div class="row">
+                <div class="col-xs-6">
+                    <h3>Game ID</h3>
+                    <h4 id="lama-game-id"></h4>
+                </div>
+                <div class="col-xs-6">
+                    <h3>Player ID</h3>
+                    <h4 id="lama-player-id"></h4>
+                </div>
+            </div>
+            <!-- Create and Join -->
+            <div class="row">
+                    <div class="col-xs-6">
+                        <button type="button" id="btn-create-game" class="btn btn-default" value>Create Game</button>
+                    </div>
+                    <div class="col-xs-6">
+                        <div class="input-group" id="join-game-group">
+                            <input type="text" id="join-game-id" class="form-control">
+                            <span class="input-group-btn">
+                                <button type="button" id="btn-join-game" class="btn btn-primary" value>Join Game</button>
+                            </span>
+                        </div>
+                    </div>
+            </div>
         </div>
     </body>
 </html>
