@@ -1,5 +1,6 @@
 var lama_game_id='';
 var lama_player_id='';
+var game_status_poller = null;
 
 function join_game(game_id) {
     $.xmlrpc({
@@ -17,6 +18,8 @@ function join_game(game_id) {
             // disable button
             $("#join-game-group").hide();
             $("#btn-create-game").hide();
+
+            query_state();
         },
         error: function(jqXHR, status, error) {
             console.log('Error joining game');
@@ -26,7 +29,27 @@ function join_game(game_id) {
     });
 };
 
+function query_state() {
+    $.xmlrpc({
+        url: 'http://localhost:1144',
+        methodName: 'query_state',
+        params: [lama_game_id, lama_player_id],
+        success: function(res, status, jqXHR) {
+            console.log(res);
+            $("#game-status").html(res);
+        },
+        error: function(jqXHR, status, error) {
+            console.log('Error');
+            console.log(error);
+        }
+    });
+    game_status_poller = setTimeout(query_state, 500);
+};
+
 $(document).ready(function(){
+    // hide until needed
+    $("#btn-start-game").hide();
+
     $("#btn-create-game").click(function(){
         $.xmlrpc({
             url: 'http://localhost:1144',
@@ -38,6 +61,7 @@ $(document).ready(function(){
 
                 console.log(`Game opened wih id ${lama_game_id}`);
                 join_game(lama_game_id);
+                $("#btn-start-game").show();
             },
             error: function(jqXHR, status, error) {
                 console.log('Error opening game');
@@ -49,5 +73,21 @@ $(document).ready(function(){
 
     $("#btn-join-game").click(function(){
         join_game($("#join-game-id").val());
+    });
+
+
+    $("#btn-start-game").click(function(){
+        $.xmlrpc({
+            url: 'http://localhost:1144',
+            methodName: 'start_game',
+            params: [lama_game_id, lama_player_id],
+            success: function(res, status, jqXHR) {
+                $("#btn-start-game").hide();
+            },
+            error: function(jqXHR, status, error) {
+                console.log('Error starting game');
+                console.log(error);
+            }
+        });
     });
 });

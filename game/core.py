@@ -1,7 +1,7 @@
+from .constants import State, Prompt, GameErrors
 from .deck import Deck
 from .players import Player, NetworkPlayer
 from .utils import prompter
-from .constants import State, Prompt, GameErrors
 from twisted.web import http, server, xmlrpc
 import random
 import string
@@ -152,6 +152,8 @@ class NetworkGame(Game):
     def __init__(self, game_id):
         self.game_id = game_id
         self.players = []
+        self.package_send = {}
+        self.package_receive = {}
         super().__init__()
 
     def add_player(self):
@@ -165,6 +167,103 @@ class NetworkGame(Game):
             return player_token
         else:
             raise xmlrpc.Fault(GameErrors.GAME_FULL, f"Game {self.game_id} is full")
+
+    def find_player(self, player_token):
+        # validate guarantees you will find one
+        for idx, player in enumerate(self.players, 1):
+            if player.token == player_token:
+                return idx
+        return None
+
+    def evaluate(self, state, info):
+        if state is State.GAME_BEGIN:
+            if info is None:
+                return Prompt.NUM_PLAYERS, State.GAME_BEGIN
+            else:
+                self.score = {}
+                for player in self.players:
+                    self.score[player.id] = 0
+                # Decide who has first turn
+                self.turn = 1  # The first playerId has first turn
+                return None, State.ROUND_BEGIN
+
+        elif state is State.ROUND_BEGIN:
+            # deck
+            self.deck = Deck()
+            self.deck.start()
+
+            # first draw
+            for player in self.players:
+                player.init()
+            for i in range(6):
+                for player in self.players:
+                    player.draw(self.deck)
+
+            return None, State.ROUND_CONT
+
+        elif state is State.ROUND_CONT:
+            print(self.deck)
+
+            if not sum(map(lambda x: x.active, self.players)):
+                return None, State.ROUND_END
+
+            player = self.players[self.turn-1]
+            deck = self.deck
+            if player.active:
+                if not deck.playable(player.hand):
+                    active_players = sum(map(lambda x: x.active, self.players))
+                    if not len(deck.main_pile) or active_players is 1:
+                        player.deactivate()
+                    elif info is None:
+                        return Prompt.FD, State.ROUND_CONT
+                    else:
+                        if info is "Fold":
+                            player.deactivate()
+                        elif info is "Draw":
+                            player.draw(self.deck)
+                else:
+                    if info is None:
+                        return Prompt.PF, State.ROUND_CONT
+                    else:
+                        if info is "Fold":
+                            player.deactivate()
+                        else:
+                            deck.discard(player.delete(info))
+
+                            # round ender if finishes hand
+                            if not len(player.hand):
+                                return None, State.ROUND_END
+
+            self.advance_turn()
+            return None, State.ROUND_CONT
+
+        elif state is State.ROUND_END:
+            over = self.calc_score()
+            for player in self.players:
+                print(f"Player{player.id} has score {self.score[player.id]}...\n")
+            if over:
+                winner = sorted(self.players,
+                                key=lambda x: self.score[x.id])[0]
+                print(f"Player{winner.id} wins.\n")
+                return None, State.GAME_END
+            else:
+                return None, State.ROUND_BEGIN
+
+    def get_info(self, prompt):
+        if prompt is Prompt.NUM_PLAYERS:
+            return len(self.players)
+        elif prompt is Prompt.FD:
+            self.package_send[self.turn] = str(prompt)
+            return None
+        elif prompt is Prompt.PF:
+            self.package_send[self.turn] = str(prompt)
+            return None
+
+    def step(self, info):
+        if self.state is not State.GAME_END:
+            prompt, new_state = self.evaluate(self.state, info)
+            self.state = new_state
+            return self.get_info(prompt)
 
 class GameMaster(xmlrpc.XMLRPC):
     def __init__(self):
@@ -215,8 +314,28 @@ class GameMaster(xmlrpc.XMLRPC):
     @xmlrpc.withRequest
     def xmlrpc_query_state(self, request, game_id, player_token):
         GameMaster.__apply_CORS_headers(request)
-        if not self.xmlrpc_validate(game_id, player_token=player_token):
+        if not self.xmlrpc_validate(request, game_id, player_token=player_token):
             raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
-        curr_state = self.games[game_id].state
+        game = self.games[game_id]
+        curr_state = game.state
+        player = game.find_player(player_token)
+        player_package = game.package_send.get(player)
         if curr_state is None:
             return f"Game has not begun yet. {len(self.games[game_id].players)} players have joined as of now."
+        else:
+            if not game.package_send:
+                _ = game.step(None)
+            return [str(curr_state), str(player_package)]
+
+    @xmlrpc.withRequest
+    def xmlrpc_start_game(self, request, game_id, player_token):
+        GameMaster.__apply_CORS_headers(request)
+        if not self.xmlrpc_validate(request, game_id, player_token=player_token):
+            raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
+        game = self.games[game_id]
+        game.init()
+        players = game.step(None)
+        # go to round init
+        _ = game.step(players)
+        return True
+
