@@ -203,6 +203,9 @@ class NetworkGame(Game):
 
         elif state is State.ROUND_CONT:
             print(self.deck)
+            #TODO: hack, improve
+            if info is not None and info.isdigit():
+                info = int(info)
 
             if not sum(map(lambda x: x.active, self.players)):
                 return None, State.ROUND_END
@@ -217,15 +220,15 @@ class NetworkGame(Game):
                     elif info is None:
                         return Prompt.FD, State.ROUND_CONT
                     else:
-                        if info is "Fold":
+                        if info == "Fold":
                             player.deactivate()
-                        elif info is "Draw":
+                        elif info == "Draw":
                             player.draw(self.deck)
                 else:
                     if info is None:
                         return Prompt.PF, State.ROUND_CONT
                     else:
-                        if info is "Fold":
+                        if info == "Fold":
                             player.deactivate()
                         else:
                             deck.discard(player.delete(info))
@@ -250,7 +253,10 @@ class NetworkGame(Game):
                 return None, State.ROUND_BEGIN
 
     def get_info(self, prompt):
-        if prompt is Prompt.NUM_PLAYERS:
+        if prompt is None:
+            self.package_send = {}
+            return None
+        elif prompt is Prompt.NUM_PLAYERS:
             return len(self.players)
         elif prompt is Prompt.FD:
             self.package_send[self.turn] = str(prompt)
@@ -262,6 +268,7 @@ class NetworkGame(Game):
     def step(self, info):
         if self.state is not State.GAME_END:
             prompt, new_state = self.evaluate(self.state, info)
+            print(f"Stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
             return self.get_info(prompt)
 
@@ -319,13 +326,30 @@ class GameMaster(xmlrpc.XMLRPC):
         game = self.games[game_id]
         curr_state = game.state
         player = game.find_player(player_token)
+        #TODO: hack, refactor
+        try:
+            top_card = game.deck.top_card()
+        except:
+            top_card = str(None)
+        player_hand = game.players[player-1].hand
         player_package = game.package_send.get(player)
         if curr_state is None:
             return f"Game has not begun yet. {len(self.games[game_id].players)} players have joined as of now."
         else:
             if not game.package_send:
                 _ = game.step(None)
-            return [str(curr_state), str(player_package)]
+            return [str(curr_state), str(player_package), top_card, player_hand]
+
+    @xmlrpc.withRequest
+    def xmlrpc_push_input(self, request, game_id, player_token, inp):
+        GameMaster.__apply_CORS_headers(request)
+        if not self.xmlrpc_validate(request, game_id, player_token=player_token):
+            raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
+        game = self.games[game_id]
+        curr_state = game.state
+        player = game.find_player(player_token)
+        _ = game.step(inp)
+        return True
 
     @xmlrpc.withRequest
     def xmlrpc_start_game(self, request, game_id, player_token):

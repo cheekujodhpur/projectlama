@@ -75,6 +75,20 @@ $(document).ready(function(){
         join_game($("#join-game-id").val());
     });
 
+    $("#btn-push-input").click(function(){
+        $.xmlrpc({
+            url: 'http://localhost:1144',
+            methodName: 'push_input',
+            params: [lama_game_id, lama_player_id, $("#push-input").val()],
+            success: function(res, status, jqXHR) {
+                console.log(res);
+            },
+            error: function(jqXHR, status, error) {
+                console.log('Error sending input');
+                console.log(error);
+            }
+        });
+    });
 
     $("#btn-start-game").click(function(){
         $.xmlrpc({
