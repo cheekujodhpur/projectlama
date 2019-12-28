@@ -153,7 +153,7 @@ class NetworkGame(Game):
         self.game_id = game_id
         self.players = []
         self.package_send = {}
-        self.package_receive = {}
+        self.package_send2 = {}
         super().__init__()
 
     def add_player(self):
@@ -191,6 +191,7 @@ class NetworkGame(Game):
             # deck
             self.deck = Deck()
             self.deck.start()
+            self.package_send2 = {}
 
             # first draw
             for player in self.players:
@@ -202,8 +203,7 @@ class NetworkGame(Game):
             return None, State.ROUND_CONT
 
         elif state is State.ROUND_CONT:
-            print(self.deck)
-            #TODO: hack, improve
+            # print(self.deck)
             if info is not None and info.isdigit():
                 info = int(info)
 
@@ -217,39 +217,50 @@ class NetworkGame(Game):
                     active_players = sum(map(lambda x: x.active, self.players))
                     if not len(deck.main_pile) or active_players is 1:
                         player.deactivate()
-                    elif info is None:
-                        return Prompt.FD, State.ROUND_CONT
+                        return None, State.ROUND_END
                     else:
                         if info == "Fold":
                             player.deactivate()
                         elif info == "Draw":
                             player.draw(self.deck)
+                        else:
+                            return Prompt.FD, State.ROUND_CONT
                 else:
                     if info is None:
                         return Prompt.PF, State.ROUND_CONT
                     else:
                         if info == "Fold":
                             player.deactivate()
-                        else:
+                        elif deck.playable(info):
+                            print(f'{info} is here')
                             deck.discard(player.delete(info))
 
                             # round ender if finishes hand
                             if not len(player.hand):
                                 return None, State.ROUND_END
+                        else:
+                            return Prompt.PF, State.ROUND_CONT
 
             self.advance_turn()
             return None, State.ROUND_CONT
 
         elif state is State.ROUND_END:
             over = self.calc_score()
+            print_str = ""
             for player in self.players:
-                print(f"Player{player.id} has score {self.score[player.id]}...\n")
+                print_str = f"{print_str}Player{player.id} has score {self.score[player.id]}...\n"
             if over:
                 winner = sorted(self.players,
                                 key=lambda x: self.score[x.id])[0]
-                print(f"Player{winner.id} wins.\n")
+                print_str = f"{print_str}Player{winner.id} wins.\n"
+                for player in self.players:
+                    self.package_send2[player.id] = print_str
+                print(print_str)
                 return None, State.GAME_END
             else:
+                for player in self.players:
+                    self.package_send2[player.id] = print_str
+                print(print_str)
                 return None, State.ROUND_BEGIN
 
     def get_info(self, prompt):
@@ -266,9 +277,10 @@ class NetworkGame(Game):
             return None
 
     def step(self, info):
+        print(info)
         if self.state is not State.GAME_END:
             prompt, new_state = self.evaluate(self.state, info)
-            print(f"Stepping from {str(self.state)} to {str(new_state)}")
+            print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
             return self.get_info(prompt)
 
@@ -336,9 +348,19 @@ class GameMaster(xmlrpc.XMLRPC):
         if curr_state is None:
             return f"Game has not begun yet. {len(self.games[game_id].players)} players have joined as of now."
         else:
-            if not game.package_send:
+            if not game.package_send and not game.package_send2:
                 _ = game.step(None)
-            return [str(curr_state), str(player_package), top_card, player_hand]
+
+            return_dict = {"curr_state": str(curr_state),
+                           "player_action": str(player_package),
+                           "top_card": top_card,
+                           "player_hand": player_hand}
+
+            score_package = game.package_send2.get(player-1)
+            if score_package:
+                game.package_send2.pop(player-1, None)
+                return_dict["score_package"]=score_package
+            return return_dict
 
     @xmlrpc.withRequest
     def xmlrpc_push_input(self, request, game_id, player_token, inp):

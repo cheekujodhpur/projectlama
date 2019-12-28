@@ -36,7 +36,24 @@ function query_state() {
         params: [lama_game_id, lama_player_id],
         success: function(res, status, jqXHR) {
             console.log(res);
-            $("#game-status").html(res);
+
+            status_html = '';
+            score_html = '';
+            if (res[0]["player_action"]=="None")
+                status_html += 'Game has not started or it is not your turn<br/>';
+            else if (res[0]["player_action"]=="Prompt.PF")
+                status_html += 'You can play or fold<br/>';
+            else if (res[0]["player_action"]=="Prompt.FD")
+                status_html += 'You can draw or fold<br/>';
+
+            if (typeof res[0]["score_package"] != "undefined")
+                score_html = res[0]["score_package"] + '<br />';
+
+            status_html += 'Current top card is ' + res[0]["top_card"] + '<br/>';
+            status_html += 'Your hand is ' + res[0]["player_hand"] + '<br/>';
+
+            $("#game-status").html(status_html);
+            $("#score-status").append(score_html);
         },
         error: function(jqXHR, status, error) {
             console.log('Error');
@@ -44,6 +61,21 @@ function query_state() {
         }
     });
     game_status_poller = setTimeout(query_state, 500);
+};
+
+function push_input(inp) {
+    $.xmlrpc({
+        url: 'http://localhost:1144',
+        methodName: 'push_input',
+        params: [lama_game_id, lama_player_id, inp],
+        success: function(res, status, jqXHR) {
+            console.log(res);
+        },
+        error: function(jqXHR, status, error) {
+            console.log('Error sending input');
+            console.log(error);
+        }
+    });
 };
 
 $(document).ready(function(){
@@ -75,19 +107,16 @@ $(document).ready(function(){
         join_game($("#join-game-id").val());
     });
 
-    $("#btn-push-input").click(function(){
-        $.xmlrpc({
-            url: 'http://localhost:1144',
-            methodName: 'push_input',
-            params: [lama_game_id, lama_player_id, $("#push-input").val()],
-            success: function(res, status, jqXHR) {
-                console.log(res);
-            },
-            error: function(jqXHR, status, error) {
-                console.log('Error sending input');
-                console.log(error);
-            }
-        });
+    $("#btn-play").children().click(function(el){
+        push_input($(this).attr("llama-val"));
+    });
+
+    $("#btn-play-draw").click(function(){
+        push_input("Draw");
+    });
+
+    $("#btn-play-fold").click(function(){
+        push_input("Fold");
     });
 
     $("#btn-start-game").click(function(){
