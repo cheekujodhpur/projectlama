@@ -2,9 +2,12 @@ var lama_game_id='';
 var lama_player_id='';
 var game_status_poller = null;
 
+//var purl = 'http://localhost:1144';
+var purl = 'http://ec2-13-233-225-82.ap-south-1.compute.amazonaws.com:1144';
+
 function join_game(game_id) {
     $.xmlrpc({
-        url: 'http://localhost:1144',
+        url: purl,
         methodName: 'join',
         params: [game_id],
         success: function(res, status, jqXHR) {
@@ -31,7 +34,7 @@ function join_game(game_id) {
 
 function query_state() {
     $.xmlrpc({
-        url: 'http://localhost:1144',
+        url: purl,
         methodName: 'query_state',
         params: [lama_game_id, lama_player_id],
         success: function(res, status, jqXHR) {
@@ -65,7 +68,7 @@ function query_state() {
 
 function push_input(inp) {
     $.xmlrpc({
-        url: 'http://localhost:1144',
+        url: purl,
         methodName: 'push_input',
         params: [lama_game_id, lama_player_id, inp],
         success: function(res, status, jqXHR) {
@@ -84,7 +87,7 @@ $(document).ready(function(){
 
     $("#btn-create-game").click(function(){
         $.xmlrpc({
-            url: 'http://localhost:1144',
+            url: purl,
             methodName: 'open',
             params: [],
             success: function(res, status, jqXHR) {
@@ -121,7 +124,7 @@ $(document).ready(function(){
 
     $("#btn-start-game").click(function(){
         $.xmlrpc({
-            url: 'http://localhost:1144',
+            url: purl,
             methodName: 'start_game',
             params: [lama_game_id, lama_player_id],
             success: function(res, status, jqXHR) {
