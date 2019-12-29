@@ -3,7 +3,7 @@ var lama_player_id='';
 var game_status_poller = null;
 
 //var purl = 'http://localhost:1144';
-var purl = 'http://ec2-13-233-225-82.ap-south-1.compute.amazonaws.com:1144';
+var purl = 'https://llama.kumar-ayush.com';
 
 function join_game(game_id) {
     $.xmlrpc({
