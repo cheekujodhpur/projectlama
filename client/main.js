@@ -14,9 +14,11 @@ function join_game(game_id) {
             lama_game_id=game_id
             $("#lama-game-id").html(lama_game_id);
 
-            lama_player_id=res[0];
+            lama_player_id=res[0]['token'];
+            sno=res[0]['sno'];
             $("#lama-player-id").html(lama_player_id);
-            console.log(`Game ${lama_game_id} joined wih id ${lama_player_id}`);
+            $("#lama-player-id").append('<br/>You are Player ' + sno + '<br/>');
+            // console.log(`Game ${lama_game_id} joined wih id ${lama_player_id}`);
 
             // disable button
             $("#join-game-group").hide();
@@ -25,8 +27,8 @@ function join_game(game_id) {
             query_state();
         },
         error: function(jqXHR, status, error) {
-            console.log('Error joining game');
-            console.log(error);
+            // console.log('Error joining game');
+            // console.log(error);
             $("#lama-player-id").html('Error joining game');
         }
     });
@@ -38,7 +40,7 @@ function query_state() {
         methodName: 'query_state',
         params: [lama_game_id, lama_player_id],
         success: function(res, status, jqXHR) {
-            console.log(res);
+            // console.log(res);
 
             status_html = '';
             score_html = '';
@@ -53,14 +55,20 @@ function query_state() {
                 score_html = res[0]["score_package"] + '<br />';
 
             status_html += 'Current top card is ' + res[0]["top_card"] + '<br/>';
-            status_html += 'Your hand is ' + res[0]["player_hand"] + '<br/>';
+            player_hand = res[0]["player_hand"].map(function(x){
+                if (x==7)
+                    return 'llama';
+                else
+                    return x;
+            });
+            status_html += 'Your hand is ' + player_hand + '<br/>';
 
             $("#game-status").html(status_html);
             $("#score-status").append(score_html);
         },
         error: function(jqXHR, status, error) {
-            console.log('Error');
-            console.log(error);
+            // console.log('Error');
+            // console.log(error);
         }
     });
     game_status_poller = setTimeout(query_state, 500);
@@ -72,11 +80,11 @@ function push_input(inp) {
         methodName: 'push_input',
         params: [lama_game_id, lama_player_id, inp],
         success: function(res, status, jqXHR) {
-            console.log(res);
+            // console.log(res);
         },
         error: function(jqXHR, status, error) {
-            console.log('Error sending input');
-            console.log(error);
+            // console.log('Error sending input');
+            // console.log(error);
         }
     });
 };
@@ -94,13 +102,13 @@ $(document).ready(function(){
                 lama_game_id=res[0];
                 $("#lama-game-id").html(lama_game_id);
 
-                console.log(`Game opened wih id ${lama_game_id}`);
+                // console.log(`Game opened wih id ${lama_game_id}`);
                 join_game(lama_game_id);
                 $("#btn-start-game").show();
             },
             error: function(jqXHR, status, error) {
-                console.log('Error opening game');
-                console.log(error);
+                // console.log('Error opening game');
+                // console.log(error);
                 $("#lama-game-id").html('Error opening game');
             }
         });
@@ -131,8 +139,8 @@ $(document).ready(function(){
                 $("#btn-start-game").hide();
             },
             error: function(jqXHR, status, error) {
-                console.log('Error starting game');
-                console.log(error);
+                // console.log('Error starting game');
+                // console.log(error);
             }
         });
     });

@@ -23,12 +23,13 @@ class Deck:
 
     def playable(self, cards):
         top_card = self.top_card()
-        if isinstance(cards, list):
+        if isinstance(cards, list) and all(isinstance(x, int) for x in cards):
             return ((top_card in cards) or (plus_one(top_card) in cards))
         elif isinstance(cards, int):
             return cards in [top_card, plus_one(top_card)]
         else:
-            raise TypeError("Only list or int")
+            # raise TypeError("Only list or int")
+            return False
 
     def __str__(self):
         out = f"The top card is {self.discard_pile[-1]}"

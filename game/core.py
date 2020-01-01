@@ -163,16 +163,16 @@ class NetworkGame(Game):
                     string.ascii_uppercase +
                     string.digits,
                     k=5))
-            self.players.append(NetworkPlayer(len(self.players), player_token))
-            return player_token
+            self.players.append(NetworkPlayer(len(self.players)+1, player_token))
+            return {"token": player_token, "sno": len(self.players)}
         else:
             raise xmlrpc.Fault(GameErrors.GAME_FULL, f"Game {self.game_id} is full")
 
     def find_player(self, player_token):
         # validate guarantees you will find one
-        for idx, player in enumerate(self.players, 1):
+        for player in self.players:
             if player.token == player_token:
-                return idx
+                return player.id
         return None
 
     def evaluate(self, state, info):
@@ -232,7 +232,6 @@ class NetworkGame(Game):
                         if info == "Fold":
                             player.deactivate()
                         elif deck.playable(info):
-                            print(f'{info} is here')
                             deck.discard(player.delete(info))
 
                             # round ender if finishes hand
@@ -293,7 +292,7 @@ class GameMaster(xmlrpc.XMLRPC):
     def __apply_CORS_headers(request):
         request.setHeader('Access-Control-Allow-Origin', '*')
         request.setHeader('Access-Control-Allow-Methods', 'POST, GET, OPTIONS')
-        request.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept')
+        request.setHeader('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Access-Control-Allow-Origin')
 
     def render_OPTIONS(self, request):
         GameMaster.__apply_CORS_headers(request)
@@ -356,9 +355,9 @@ class GameMaster(xmlrpc.XMLRPC):
                            "top_card": top_card,
                            "player_hand": player_hand}
 
-            score_package = game.package_send2.get(player-1)
+            score_package = game.package_send2.get(player)
             if score_package:
-                game.package_send2.pop(player-1, None)
+                game.package_send2.pop(player, None)
                 return_dict["score_package"]=score_package
             return return_dict
 
@@ -370,7 +369,8 @@ class GameMaster(xmlrpc.XMLRPC):
         game = self.games[game_id]
         curr_state = game.state
         player = game.find_player(player_token)
-        _ = game.step(inp)
+        if game.turn == player:
+            _ = game.step(inp)
         return True
 
     @xmlrpc.withRequest
