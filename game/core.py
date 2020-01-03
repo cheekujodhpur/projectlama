@@ -231,7 +231,7 @@ class NetworkGame(Game):
                     else:
                         if info == "Fold":
                             player.deactivate()
-                        elif deck.playable(info):
+                        elif deck.playable(info) and info in player.hand:
                             deck.discard(player.delete(info))
 
                             # round ender if finishes hand
