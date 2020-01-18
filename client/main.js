@@ -1,147 +1,42 @@
-var lama_game_id='';
-var lama_player_id='';
-var game_status_poller = null;
-
-//var purl = 'http://localhost:1144';
-var purl = 'https://llama.kumar-ayush.com';
-
-function join_game(game_id) {
-    $.xmlrpc({
-        url: purl,
-        methodName: 'join',
-        params: [game_id],
-        success: function(res, status, jqXHR) {
-            lama_game_id=game_id
-            $("#lama-game-id").html(lama_game_id);
-
-            lama_player_id=res[0]['token'];
-            sno=res[0]['sno'];
-            $("#lama-player-id").html(lama_player_id);
-            $("#lama-player-id").append('<br/>You are Player ' + sno + '<br/>');
-            // console.log(`Game ${lama_game_id} joined wih id ${lama_player_id}`);
-
-            // disable button
-            $("#join-game-group").hide();
-            $("#btn-create-game").hide();
-
-            query_state();
-        },
-        error: function(jqXHR, status, error) {
-            // console.log('Error joining game');
-            // console.log(error);
-            $("#lama-player-id").html('Error joining game');
-        }
-    });
+function setCookie(key, value, expiry) {
+    var expires = new Date();
+    expires.setTime(expires.getTime() + (expiry * 24 * 60 * 60 * 1000));
+    document.cookie = key + '=' + value + ';expires=' + expires.toUTCString();
 };
 
-function query_state() {
-    $.xmlrpc({
-        url: purl,
-        methodName: 'query_state',
-        params: [lama_game_id, lama_player_id],
-        success: function(res, status, jqXHR) {
-            // console.log(res);
-
-            status_html = '';
-            score_html = '';
-            if (res[0]["player_action"]=="None")
-                status_html += 'Game has not started or it is not your turn<br/>';
-            else if (res[0]["player_action"]=="Prompt.PF")
-                status_html += 'You can play or fold<br/>';
-            else if (res[0]["player_action"]=="Prompt.FD")
-                status_html += 'You can draw or fold<br/>';
-
-            if (typeof res[0]["score_package"] != "undefined")
-                score_html = res[0]["score_package"] + '<br />';
-
-            status_html += 'Current top card is ' + res[0]["top_card"] + '<br/>';
-            player_hand = res[0]["player_hand"].map(function(x){
-                if (x==7)
-                    return 'llama';
-                else
-                    return x;
-            });
-            status_html += 'Your hand is ' + player_hand + '<br/>';
-
-            $("#game-status").html(status_html);
-            $("#score-status").append(score_html);
-        },
-        error: function(jqXHR, status, error) {
-            // console.log('Error');
-            // console.log(error);
-        }
-    });
-    game_status_poller = setTimeout(query_state, 500);
+function readCookie(key) {
+    var keyValue = document.cookie.match('(^|;) ?' + key + '=([^;]*)(;|$)');
+    return keyValue ? keyValue[2] : null;
 };
 
-function push_input(inp) {
-    $.xmlrpc({
-        url: purl,
-        methodName: 'push_input',
-        params: [lama_game_id, lama_player_id, inp],
-        success: function(res, status, jqXHR) {
-            // console.log(res);
-        },
-        error: function(jqXHR, status, error) {
-            // console.log('Error sending input');
-            // console.log(error);
-        }
-    });
+function eraseCookie(key) {
+    setCookie(key, "", -1);
 };
 
 $(document).ready(function(){
-    // hide until needed
-    $("#btn-start-game").hide();
+    var alias = readCookie("alias");
+    if(alias != null) {
+        $("#l-menu-container").removeClass("d-none");
+    }
+    else {
+        $("#l-alias-container").removeClass("d-none");
+    };
+    $("#l-topbar").html(alias);
 
-    $("#btn-create-game").click(function(){
-        $.xmlrpc({
-            url: purl,
-            methodName: 'open',
-            params: [],
-            success: function(res, status, jqXHR) {
-                lama_game_id=res[0];
-                $("#lama-game-id").html(lama_game_id);
+    // focus on alias textbox
+    $("#l-alias").focus();
 
-                // console.log(`Game opened wih id ${lama_game_id}`);
-                join_game(lama_game_id);
-                $("#btn-start-game").show();
-            },
-            error: function(jqXHR, status, error) {
-                // console.log('Error opening game');
-                // console.log(error);
-                $("#lama-game-id").html('Error opening game');
-            }
-        });
+    // alias form
+    $("#l-alias-form").submit(function(e) {
+        alias = $("#l-alias").val();
+        $("#l-alias").val("");
+        if(alias === "")
+            alias = "Anonymous";
+
+        setCookie("alias", alias, 1);
     });
 
-    $("#btn-join-game").click(function(){
-        join_game($("#join-game-id").val());
-    });
-
-    $("#btn-play").children().click(function(el){
-        push_input($(this).attr("llama-val"));
-    });
-
-    $("#btn-play-draw").click(function(){
-        push_input("Draw");
-    });
-
-    $("#btn-play-fold").click(function(){
-        push_input("Fold");
-    });
-
-    $("#btn-start-game").click(function(){
-        $.xmlrpc({
-            url: purl,
-            methodName: 'start_game',
-            params: [lama_game_id, lama_player_id],
-            success: function(res, status, jqXHR) {
-                $("#btn-start-game").hide();
-            },
-            error: function(jqXHR, status, error) {
-                // console.log('Error starting game');
-                // console.log(error);
-            }
-        });
+    $("#l-clear-form").submit(function(e) {
+        eraseCookie("alias");
     });
 });
