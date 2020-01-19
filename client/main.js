@@ -1,3 +1,5 @@
+const cookie_list = [ "alias", "gameid", "playertoken" ];
+
 function setCookie(key, value, expiry) {
     var expires = new Date();
     expires.setTime(expires.getTime() + (expiry * 24 * 60 * 60 * 1000));
@@ -15,10 +17,17 @@ function eraseCookie(key) {
 
 $(document).ready(function(){
     var alias = readCookie("alias");
-    if(alias != null) {
+    var gameid = readCookie("gameid");
+    if(gameid != null) {
+        $("#l-lobby-container").removeClass("d-none");
+        var listitem = '<li class="list-group-item">' + alias + '</li>';
+        $("#l-lobby-members").append(listitem);
+    }
+    else if(alias != null) {
         $("#l-menu-container").removeClass("d-none");
     }
     else {
+        $("#l-clear-container").addClass("d-none");
         $("#l-alias-container").removeClass("d-none");
     };
     $("#l-topbar").html(alias);
@@ -37,6 +46,13 @@ $(document).ready(function(){
     });
 
     $("#l-clear-form").submit(function(e) {
-        eraseCookie("alias");
+        cookie_list.forEach(function(x) {
+            eraseCookie(x);
+        });
+    });
+
+    // Menu items
+    $("#l-create-button").click(function(){
+        createGame(alias); 
     });
 });

@@ -28,6 +28,26 @@
         <div id="l-menu-container" class="l-menu container d-none">
             <div class="row justify-content-center">
                 <div class="mx-auto">
+                    <form id="l-menu-form"></form>
+                    <div id="l-menu-buttons" class="btn-group-vertical text-center p-3">
+                        <button type="button" id="l-join-button" class="btn btn-secondary">Join Lobby</button>
+                        <button type="button" id="l-create-button" class="btn btn-primary">Create Lobby</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div id="l-lobby-container" class="l-menu container d-none">
+            <div class="row justify-content-center">
+                <div class="text-center mx-auto">
+                    <h4>Members</h4>
+                    <ul class="list-group md-3" id="l-lobby-members">
+                    </ul>
+                </div>
+            </div>
+        </div>
+        <div id="l-clear-container" class="container">
+            <div class="row justify-content-center">
+                <div class="mx-auto">
                     <form id="l-clear-form">
                         <div class="text-center">
                             <button type="submit" class="btn btn-danger">Clear Data</button>
@@ -48,5 +68,6 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-xmlrpc/0.4.3/jquery.xmlrpc.js" integrity="sha256-drJeWSPQ0DcDSP+N0EEmzEkOdI0uOCgGO6zwwNkLbhg=" crossorigin="anonymous"></script>
         <!-- Custom -->
         <script type="text/javascript" src="./main.js"></script>
+        <script type="text/javascript" src="./lama.js"></script>
     </body>
 </html>
