@@ -53,6 +53,6 @@ $(document).ready(function(){
 
     // Menu items
     $("#l-create-button").click(function(){
-        createGame(alias); 
+        createGame(); 
     });
 });

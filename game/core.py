@@ -36,15 +36,15 @@ class NetworkGame(Game):
         self.package_send2 = {}
         super().__init__()
 
-    def add_player(self):
+    def add_player(self, alias):
         if len(self.players) < 6:
             player_token = ''.join(
                 random.choices(
                     string.ascii_uppercase +
                     string.digits,
                     k=5))
-            self.players.append(NetworkPlayer(len(self.players)+1, player_token))
-            return {"token": player_token, "sno": len(self.players)}
+            self.players.append(NetworkPlayer(alias, player_token))
+            return {"token": player_token}
         else:
             raise xmlrpc.Fault(GameErrors.GAME_FULL, f"Game {self.game_id} is full")
 
@@ -205,9 +205,9 @@ class GameMaster(xmlrpc.XMLRPC):
         return True
 
     @xmlrpc.withRequest
-    def xmlrpc_join(self, request, game_id):
+    def xmlrpc_join(self, request, game_id, alias):
         GameMaster.__apply_CORS_headers(request)
-        return self.games[game_id].add_player()
+        return self.games[game_id].add_player(alias)
 
     @xmlrpc.withRequest
     def xmlrpc_query_state(self, request, game_id, player_token):

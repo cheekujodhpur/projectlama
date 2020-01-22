@@ -2,8 +2,7 @@ from .utils import prompter
 
 
 class Player:
-    def __init__(self, sno, auto=False):
-        self.id = sno
+    def __init__(self, auto=False):
         self.auto = auto
         self.hand = []
         self.active = True
@@ -46,7 +45,8 @@ class Player:
 
 
 class NetworkPlayer(Player):
-    def __init__(self, sno, token):
+    def __init__(self, alias, token):
+        self.alias = alias
         self.token = token
-        super().__init__(sno)
+        super().__init__()
 
