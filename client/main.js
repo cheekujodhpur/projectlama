@@ -20,8 +20,6 @@ $(document).ready(function(){
     var gameid = readCookie("gameid");
     if(gameid != null) {
         $("#l-lobby-container").removeClass("d-none");
-        var listitem = '<li class="list-group-item">' + alias + '</li>';
-        $("#l-lobby-members").append(listitem);
     }
     else if(alias != null) {
         $("#l-menu-container").removeClass("d-none");

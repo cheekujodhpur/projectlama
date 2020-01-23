@@ -1,48 +1,39 @@
-var lama_game_id='';
-var lama_player_token='';
 var game_status_poller = null;
 
 var purl = 'http://localhost:1144';
 //var purl = 'https://llama.kumar-ayush.com';
 
-function query_state() {
+function stateHandler(data) {
+    var myAlias = readCookie("alias");
+    // Display all players
+    $("#l-lobby-members").html('');
+    data.players.forEach(function(name) {
+        if (name == myAlias) {
+            var listitem = '<li class="list-group-item list-group-item-primary">' + name  + '</li>';
+        }
+        else {
+            var listitem = '<li class="list-group-item">' + name  + '</li>';
+        };
+        $("#l-lobby-members").append(listitem);
+    });
+};
+
+function queryState() {
+    var lama_game_id = readCookie("gameid");
+    var lama_player_token = readCookie("playertoken");
     $.xmlrpc({
         url: purl,
         methodName: 'query_state',
-        params: [lama_game_id, lama_player_id],
+        params: [lama_game_id, lama_player_token],
         success: function(res, status, jqXHR) {
-            // console.log(res);
-
-            status_html = '';
-            score_html = '';
-            if (res[0]["player_action"]=="None")
-                status_html += 'Game has not started or it is not your turn<br/>';
-            else if (res[0]["player_action"]=="Prompt.PF")
-                status_html += 'You can play or fold<br/>';
-            else if (res[0]["player_action"]=="Prompt.FD")
-                status_html += 'You can draw or fold<br/>';
-
-            if (typeof res[0]["score_package"] != "undefined")
-                score_html = res[0]["score_package"] + '<br />';
-
-            status_html += 'Current top card is ' + res[0]["top_card"] + '<br/>';
-            player_hand = res[0]["player_hand"].map(function(x){
-                if (x==7)
-                    return 'llama';
-                else
-                    return x;
-            });
-            status_html += 'Your hand is ' + player_hand + '<br/>';
-
-            $("#game-status").html(status_html);
-            $("#score-status").append(score_html);
+            stateHandler(res[0]);
         },
         error: function(jqXHR, status, error) {
-            // console.log('Error');
-            // console.log(error);
+            console.log('Encountered an error');
+            console.log(error);
         }
     });
-    game_status_poller = setTimeout(query_state, 500);
+    // game_status_poller = setTimeout(query_state, 500);
 };
 
 function push_input(inp) {
@@ -66,7 +57,7 @@ function createGame() {
         methodName: 'open',
         params: [],
         success: function(res, status, jqXHR) {
-            lama_game_id=res[0];
+            var lama_game_id=res[0];
             setCookie("gameid", lama_game_id, 1);
             joinGame(lama_game_id);
         },
@@ -78,13 +69,17 @@ function createGame() {
 };
 
 function joinGame(game_id) {
+    // set if new joiner
+    if (readCookie(game_id) == null)
+        setCookie("gameid", game_id);
+
     var alias = readCookie("alias");
     $.xmlrpc({
         url: purl,
         methodName: 'join',
         params: [game_id, alias],
         success: function(res, status, jqXHR) {
-            lama_player_token=res[0]['token'];
+            var lama_player_token=res[0]['token'];
             setCookie("playertoken", lama_player_token, 1);
             $("#l-menu-form").submit();
         },

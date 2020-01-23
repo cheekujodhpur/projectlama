@@ -52,7 +52,7 @@ class NetworkGame(Game):
         # validate guarantees you will find one
         for player in self.players:
             if player.token == player_token:
-                return player.id
+                return player
         return None
 
     def evaluate(self, state, info):
@@ -215,8 +215,17 @@ class GameMaster(xmlrpc.XMLRPC):
         if not self.xmlrpc_validate(request, game_id, player_token=player_token):
             raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
         game = self.games[game_id]
-        curr_state = game.state
         player = game.find_player(player_token)
+        curr_state = game.state
+        result = {}
+
+        # Game not begun, lobby state to be sent
+        if curr_state is None:
+            result["game_state"] = "none"
+            result["action"] = "wait"
+            result["players"] = list(map(lambda x: x.alias, game.players))
+            return result
+
         #TODO: hack, refactor
         try:
             top_card = game.deck.top_card()
