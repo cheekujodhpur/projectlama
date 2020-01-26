@@ -2,6 +2,7 @@ from .constants import State, Prompt, GameErrors
 from .deck import Deck
 from .players import Player, NetworkPlayer
 from .utils import prompter
+from collections import deque
 from twisted.web import http, server, xmlrpc
 import random
 import string
@@ -32,6 +33,7 @@ class NetworkGame(Game):
     def __init__(self, game_id):
         self.game_id = game_id
         self.players = []
+        self.error_queue = deque()
         self.package_send = {}
         self.package_send2 = {}
         super().__init__()
@@ -46,7 +48,7 @@ class NetworkGame(Game):
             self.players.append(NetworkPlayer(alias, player_token))
             return {"token": player_token}
         else:
-            raise xmlrpc.Fault(GameErrors.GAME_FULL, f"Game {self.game_id} is full")
+            return {"error": "Game is full"}
 
     def find_player(self, player_token):
         # validate guarantees you will find one
@@ -224,6 +226,8 @@ class GameMaster(xmlrpc.XMLRPC):
             result["game_state"] = "none"
             result["action"] = "wait"
             result["players"] = list(map(lambda x: x.alias, game.players))
+            if len(game.error_queue):
+                result["error"] = game.error_queue.pop() 
             return result
 
         #TODO: hack, refactor

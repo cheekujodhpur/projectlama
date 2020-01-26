@@ -68,8 +68,6 @@ function createGame() {
     });
 };
 
-var dbg = null;
-
 function joinGame(game_id) {
     var alias = readCookie("alias");
     $.xmlrpc({
@@ -77,6 +75,11 @@ function joinGame(game_id) {
         methodName: 'join',
         params: [game_id, alias],
         success: function(res, status, jqXHR) {
+            if("error" in res[0]) {
+                alert(res[0]["error"]);
+                return;
+            };
+            // else go on
             var lama_player_token=res[0]['token'];
             // set if new joiner
             if (readCookie(game_id) == null)
@@ -87,7 +90,6 @@ function joinGame(game_id) {
         },
         error: function(jqXHR, status, error) {
             console.log('Error joining game');
-            dbg = error;
             console.log(error);
         }
     });
