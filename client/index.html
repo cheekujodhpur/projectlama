@@ -42,31 +42,33 @@
                 <button type="button" id="l-create-button" class="btn btn-primary">Create Lobby</button>
             </div>
         </div>
-        <div id="l-lobby-container" class="l-menu container d-none">
+        <!-- main game container BEGIN -->
+        <div id="l-game-container" class="l-menu container d-none">
             <div class="row justify-content-center">
-                <div class="text-center mx-auto p-3">
-                    <h4>Members</h4>
-                    <ul class="list-group md-3" id="l-lobby-members">
-                    </ul>
-                    <p id="l-lobby-message-container"></p>
+                <div class="col-sm-9 border-right d-none l-flex-null" id="l-game-content-container">
+                    Hello World
                 </div>
-            </div>
-            <div class="row justify-content-center">
-                <button type="button" id="l-start-game-button" class="btn btn-primary d-none">Start Game</button>
-            </div>
-        </div>
-        <div id="l-clear-container" class="container">
-            <div class="row justify-content-center">
-                <div class="mx-auto">
-                    <form id="l-clear-form">
-                        <div class="text-center">
-                            <button type="submit" class="btn btn-danger">Clear Data</button>
+                <div class="col-sm-3">
+                    <div class="row justify-content-center">
+                        <div class="text-center mx-auto p-3">
+                            <h4>Members</h4>
+                            <ul class="list-group md-3" id="l-lobby-members">
+                            </ul>
+                            <p id="l-lobby-message-container"></p>
                         </div>
-                    </form>
+                    </div>
+                    <div class="row justify-content-center">
+                        <button type="button" id="l-start-game-button" class="btn btn-primary d-none">Start Game</button>
+                    </div>
                 </div>
             </div>
         </div>
-        <div id="l-topbar" class="pl-3 justify-content-center fixed-top bg-light">
+        <!-- main game container END -->
+        <div id="l-topbar" class="p-2 d-inline-flex justify-content-between fixed-top bg-light">
+            <span id="l-topbar-info"></span>
+            <form id="l-clear-form">
+                <button type="submit" class="btn btn-sm btn-danger">Clear Data</button>
+            </form>
         </div>
 
         <!-- JS -->

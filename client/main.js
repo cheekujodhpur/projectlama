@@ -20,7 +20,7 @@ $(document).ready(function(){
     var gameid = readCookie("gameid");
     var playertoken = readCookie("playertoken");
     if(gameid != null && playertoken != null) {
-        $("#l-lobby-container").removeClass("d-none");
+        $("#l-game-container").removeClass("d-none");
         queryState();
     }
     else if(alias != null) {
@@ -30,9 +30,9 @@ $(document).ready(function(){
         $("#l-clear-container").addClass("d-none");
         $("#l-alias-container").removeClass("d-none");
     };
-    $("#l-topbar").html(alias);
+    $("#l-topbar-info").html(alias);
     if(gameid != null)
-        $("#l-topbar").append(' - ' + gameid);
+        $("#l-topbar-info").append(' - ' + gameid);
 
     // focus on alias textbox
     $("#l-alias").focus();
@@ -54,8 +54,15 @@ $(document).ready(function(){
     });
 
     // Menu items
-    $("#l-create-button").click(function(){
+    $("#l-create-button").click(function() {
         createGame(); 
+    });
+
+    $("#l-start-game-button").click(function() {
+        $("#l-game-content-container").removeClass("d-none");
+        setTimeout(function(){
+            $("#l-game-content-container").removeClass("l-flex-null");
+        },10);
     });
 
     $("#l-menu-form").submit(function(e) {

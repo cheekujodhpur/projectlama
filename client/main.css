@@ -6,3 +6,12 @@
 .list-group {
     display: inline-block !important;
 }
+
+#l-game-content-container {
+    transition:flex 1s ease-out;
+}
+
+/* Only for animation */
+.l-flex-null {
+    flex: 0 !important;
+}
