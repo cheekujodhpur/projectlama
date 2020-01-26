@@ -33,7 +33,7 @@ function queryState() {
             console.log(error);
         }
     });
-    // game_status_poller = setTimeout(query_state, 500);
+    game_status_poller = setTimeout(queryState, 500);
 };
 
 function push_input(inp) {
@@ -68,11 +68,9 @@ function createGame() {
     });
 };
 
-function joinGame(game_id) {
-    // set if new joiner
-    if (readCookie(game_id) == null)
-        setCookie("gameid", game_id);
+var dbg = null;
 
+function joinGame(game_id) {
     var alias = readCookie("alias");
     $.xmlrpc({
         url: purl,
@@ -80,11 +78,16 @@ function joinGame(game_id) {
         params: [game_id, alias],
         success: function(res, status, jqXHR) {
             var lama_player_token=res[0]['token'];
+            // set if new joiner
+            if (readCookie(game_id) == null)
+                setCookie("gameid", game_id);
+
             setCookie("playertoken", lama_player_token, 1);
             $("#l-menu-form").submit();
         },
         error: function(jqXHR, status, error) {
             console.log('Error joining game');
+            dbg = error;
             console.log(error);
         }
     });

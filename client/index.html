@@ -28,11 +28,19 @@
         <div id="l-menu-container" class="l-menu container d-none">
             <div class="row justify-content-center">
                 <div class="mx-auto">
-                    <form id="l-menu-form"></form>
-                    <div id="l-menu-buttons" class="btn-group-vertical text-center p-3">
-                        <button type="button" id="l-join-button" class="btn btn-secondary">Join Lobby</button>
-                        <button type="button" id="l-create-button" class="btn btn-primary">Create Lobby</button>
-                    </div>
+                    <form id="l-menu-form">
+                        <div id="l-menu-buttons" class="input-group text-center p-3">
+                            <input type="text" id="l-join-game-id" class="form-control" placeholder="Game ID">
+                            <div class="input-group-append">
+                                <button type="submit" id="l-join-button" class="btn btn-secondary">Join Lobby</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="text-right">
+                    <button type="button" id="l-create-button" class="btn btn-primary">Create Lobby</button>
                 </div>
             </div>
         </div>

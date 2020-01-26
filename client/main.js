@@ -18,8 +18,10 @@ function eraseCookie(key) {
 $(document).ready(function(){
     var alias = readCookie("alias");
     var gameid = readCookie("gameid");
-    if(gameid != null) {
+    var playertoken = readCookie("playertoken");
+    if(gameid != null && playertoken != null) {
         $("#l-lobby-container").removeClass("d-none");
+        queryState();
     }
     else if(alias != null) {
         $("#l-menu-container").removeClass("d-none");
@@ -29,6 +31,8 @@ $(document).ready(function(){
         $("#l-alias-container").removeClass("d-none");
     };
     $("#l-topbar").html(alias);
+    if(gameid != null)
+        $("#l-topbar").append(' - ' + gameid);
 
     // focus on alias textbox
     $("#l-alias").focus();
@@ -52,5 +56,14 @@ $(document).ready(function(){
     // Menu items
     $("#l-create-button").click(function(){
         createGame(); 
+    });
+
+    $("#l-menu-form").submit(function(e) {
+        var join_game_id = $("#l-join-game-id").val();
+        $("#l-join-game-id").val('');
+        if(join_game_id.length > 0) {
+            joinGame(join_game_id);
+            e.preventDefault();
+        };
     });
 });
