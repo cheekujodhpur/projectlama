@@ -39,18 +39,20 @@
                 </div>
             </div>
             <div class="row justify-content-center">
-                <div class="text-right">
-                    <button type="button" id="l-create-button" class="btn btn-primary">Create Lobby</button>
-                </div>
+                <button type="button" id="l-create-button" class="btn btn-primary">Create Lobby</button>
             </div>
         </div>
         <div id="l-lobby-container" class="l-menu container d-none">
             <div class="row justify-content-center">
-                <div class="text-center mx-auto">
+                <div class="text-center mx-auto p-3">
                     <h4>Members</h4>
                     <ul class="list-group md-3" id="l-lobby-members">
                     </ul>
+                    <p id="l-lobby-message-container"></p>
                 </div>
+            </div>
+            <div class="row justify-content-center">
+                <button type="button" id="l-start-game-button" class="btn btn-primary d-none">Start Game</button>
             </div>
         </div>
         <div id="l-clear-container" class="container">

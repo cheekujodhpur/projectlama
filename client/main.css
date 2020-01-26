@@ -1,4 +1,8 @@
 .l-menu {
-    margin-top:20vh;
+    margin-top: 20vh;
     margin-bottom: 2vh;
-};
+}
+
+.list-group {
+    display: inline-block !important;
+}

@@ -3,8 +3,14 @@ var game_status_poller = null;
 var purl = 'http://localhost:1144';
 //var purl = 'https://llama.kumar-ayush.com';
 
-function stateHandler(data) {
+var stateMap = {
+    'none': lobbyWaitHandler
+};
+
+function lobbyWaitHandler(data) {
     var myAlias = readCookie("alias");
+    var gameId = readCookie("gameid");
+
     // Display all players
     $("#l-lobby-members").html('');
     data.players.forEach(function(name) {
@@ -16,6 +22,31 @@ function stateHandler(data) {
         };
         $("#l-lobby-members").append(listitem);
     });
+
+    // print message
+    var msg = "Waiting for lobby master to start the game.<br />";
+    if( data.players.length < 6 ) {
+        msg = msg + "Invite players with game id <b>" + gameId + "</b>.<br />";
+    }
+    else {
+        msg = msg + "Lobby is full.<br />";
+    };
+    $("#l-lobby-message-container").html(msg);
+
+    // display the start button
+    if (data.players[0] == myAlias)
+        $("#l-start-game-button").removeClass("d-none");
+};
+
+function defaultStateHandler(data) {
+    console.log(data);
+};
+
+function stateHandler(data) {
+    if (data["game_state"] in stateMap)
+        stateMap[data["game_state"]](data);
+    else
+        defaultStateHandler(data);
 };
 
 function queryState() {
@@ -70,6 +101,7 @@ function createGame() {
 
 function joinGame(game_id) {
     var alias = readCookie("alias");
+    game_id = game_id.toUpperCase();
     $.xmlrpc({
         url: purl,
         methodName: 'join',
