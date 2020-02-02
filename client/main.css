@@ -23,7 +23,7 @@
 
 #l-game-content-container {
     max-width: 97vw;
-};
+}
 
 @media (min-width: 768px) {
     #l-sidebar {
