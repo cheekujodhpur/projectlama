@@ -7,11 +7,35 @@
     display: inline-block !important;
 }
 
-#l-game-content-container {
-    transition:flex 1s ease-out;
+#l-sidebar {
+    min-height:100vh;
+    margin-left: -15rem;
+    width: 15rem;
+    -webkit-transition: margin .25s ease-out;
+    -moz-transition: margin .25s ease-out;
+    -o-transition: margin .25s ease-out;
+    transition: margin .25s ease-out;
 }
 
-/* Only for animation */
-.l-flex-null {
-    flex: 0 !important;
+#l-sidebar.toggled {
+    margin-left: 0;
+}
+
+#l-game-content-container {
+    max-width: 97vw;
+};
+
+@media (min-width: 768px) {
+    #l-sidebar {
+        margin-left: 0;
+    }
+
+    #l-game-content-container {
+        min-width: 0;
+        width: 100%;
+    }
+
+    #l-sidebar-toggle {
+        display: none;
+    }
 }
