@@ -1,4 +1,4 @@
-const cookie_list = [ "alias", "gameid", "playertoken" ];
+const cookie_list = [ "alias", "gameid", "playertoken", "started" ];
 
 function setCookie(key, value, expiry) {
     var expires = new Date();
@@ -19,11 +19,14 @@ $(document).ready(function(){
     var alias = readCookie("alias");
     var gameid = readCookie("gameid");
     var playertoken = readCookie("playertoken");
-    if(gameid != null && playertoken != null) {
+    var started = readCookie("started");
+    if (gameid != null && playertoken != null) {
         $("#l-game-container").removeClass("d-none");
+        if (started != null)
+            revealGame();
         queryState();
     }
-    else if(alias != null) {
+    else if (alias != null) {
         $("#l-menu-container").removeClass("d-none");
     }
     else {

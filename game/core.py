@@ -87,16 +87,13 @@ class NetworkGame(Game):
             return None, State.ROUND_CONT
 
         elif state is State.ROUND_CONT:
-            # print(self.deck)
-            self.input_wait_queue.append("something")
-            return None, State.ROUND_CONT
             if info is not None and info.isdigit():
                 info = int(info)
 
             if not sum(map(lambda x: x.active, self.players)):
                 return None, State.ROUND_END
 
-            player = self.players[self.turn-1]
+            player = self.turn 
             deck = self.deck
             if player.active:
                 if not deck.playable(player.hand):
@@ -150,15 +147,12 @@ class NetworkGame(Game):
 
     def get_info(self, prompt):
         if prompt is None:
-            self.package_send = {}
             return None
-        elif prompt is Prompt.NUM_PLAYERS:
-            return len(self.players)
         elif prompt is Prompt.FD:
-            self.package_send[self.turn] = str(prompt)
+            self.input_wait_queue.append("FD")
             return None
         elif prompt is Prompt.PF:
-            self.package_send[self.turn] = str(prompt)
+            self.input_wait_queue.append("PF")
             return None
 
     def step(self, info):
@@ -227,21 +221,27 @@ class GameMaster(xmlrpc.XMLRPC):
         game = self.games[game_id]
         player = game.find_player(player_token)
         curr_state = game.state
+        print(curr_state)
+
+        if not len(game.input_wait_queue):
+            _ = game.step(None)
 
         # Game not begun, lobby state to be sent
         if curr_state is None:
             result["game_state"] = "none"
             result["action"] = "wait"
             result["players"] = list(map(lambda x: x.alias, game.players))
+
         if curr_state is State.ROUND_CONT:
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
+            result["hand"] = player.hand
+            if game.turn == player:
+                result["my_turn"] = "yes"
+                result["expected_action"] = game.input_wait_queue[0]
 
         if len(game.error_queue):
             result["error"] = game.error_queue.pop() 
-
-        if not len(game.input_wait_queue):
-            _ = game.step(None)
 
         return result
 

@@ -8,8 +8,27 @@ var stateMap = {
     'round_running': roundRunHandler
 };
 
+function myTurnHandler(data) {
+    var msg = "It is your turn. You can ";
+    if (data.expected_action == "PF")
+        msg += "play or fold.";
+    else if (data.expected_action == "FD")
+        msg += "draw or fold.";
+    else
+        msg += "<exterminate>";
+
+    $("#l-lobby-message-container").html(msg);
+};
+
 function roundRunHandler(data) {
-    console.log(data.whose_turn);
+    if ("my_turn" in data) {
+        myTurnHandler(data);
+    }
+    else {
+        var msg = "Whose turn is it? " + data.whose_turn;
+        $("#l-lobby-message-container").html(msg);
+    }
+    renderHand(data.hand);
 };
 
 function lobbyWaitHandler(data) {
@@ -56,6 +75,15 @@ function stateHandler(data) {
         defaultStateHandler(data);
 };
 
+function renderHand(cards) {
+    var card_list = '<ul>';
+    cards.forEach(function(card) {
+        card_list += '<li>' + card + '</li>';
+    });
+    card_list += '</ul>';
+    $("#l-game-content-container").html(card_list);
+};
+
 function queryState() {
     var lama_game_id = readCookie("gameid");
     var lama_player_token = readCookie("playertoken");
@@ -89,6 +117,12 @@ function push_input(inp) {
     });
 };
 
+function revealGame() {
+    $("#l-game-content-container").removeClass('d-none');
+    $("#l-sidebar").removeClass("toggled");
+    $("#l-start-game-button").hide();
+};
+
 function startGame() {
     var lama_game_id = readCookie("gameid");
     var lama_player_token = readCookie("playertoken");
@@ -97,9 +131,8 @@ function startGame() {
         methodName: 'start_game',
         params: [lama_game_id, lama_player_token],
         success: function(res, status, jqXHR) {
-            $("#l-game-content-container").removeClass('d-none');
-            $("#l-sidebar").removeClass("toggled");
-            $("#l-start-game-button").hide();
+            revealGame();
+            setCookie("started", 1, 1);
             stateHandler(res[0]);
         },
         error: function(jqXHR, status, error) {
