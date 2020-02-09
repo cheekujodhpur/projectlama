@@ -3,6 +3,7 @@ from .deck import Deck
 from .players import Player, NetworkPlayer
 from .utils import prompter
 from collections import deque
+from itertools import cycle
 from twisted.web import http, server, xmlrpc
 import random
 import string
@@ -12,13 +13,15 @@ class Game:
     def __init__(self):
         self.history = []
         self.state = None
+
+        self.turn_cycler = None
         self.turn = None
 
     def init(self):
         self.state = State.GAME_BEGIN
 
     def advance_turn(self):
-        self.turn = self.turn % len(self.players) + 1
+        self.turn = next(self.turn_cycler)
 
     def calc_score(self):
         for player in self.players:
@@ -34,9 +37,16 @@ class NetworkGame(Game):
         self.game_id = game_id
         self.players = []
         self.error_queue = deque()
+        self.input_wait_queue = deque()
         self.package_send = {}
         self.package_send2 = {}
         super().__init__()
+
+    def init(self):
+        super().init()
+        self.input_wait_queue.pop()
+        self.turn_cycler = cycle(self.players)
+        self.turn = next(self.turn_cycler)
 
     def add_player(self, alias):
         if len(self.players) < 6:
@@ -59,15 +69,7 @@ class NetworkGame(Game):
 
     def evaluate(self, state, info):
         if state is State.GAME_BEGIN:
-            if info is None:
-                return Prompt.NUM_PLAYERS, State.GAME_BEGIN
-            else:
-                self.score = {}
-                for player in self.players:
-                    self.score[player.id] = 0
-                # Decide who has first turn
-                self.turn = 1  # The first playerId has first turn
-                return None, State.ROUND_BEGIN
+            return None, State.ROUND_BEGIN
 
         elif state is State.ROUND_BEGIN:
             # deck
@@ -86,6 +88,8 @@ class NetworkGame(Game):
 
         elif state is State.ROUND_CONT:
             # print(self.deck)
+            self.input_wait_queue.append("something")
+            return None, State.ROUND_CONT
             if info is not None and info.isdigit():
                 info = int(info)
 
@@ -158,7 +162,6 @@ class NetworkGame(Game):
             return None
 
     def step(self, info):
-        print(info)
         if self.state is not State.GAME_END:
             prompt, new_state = self.evaluate(self.state, info)
             print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
@@ -192,6 +195,7 @@ class GameMaster(xmlrpc.XMLRPC):
                 string.digits,
                 k=5))
         g = NetworkGame(game_id)
+        g.input_wait_queue.append("start")
         self.games[game_id] = g
         return game_id
 
@@ -214,21 +218,32 @@ class GameMaster(xmlrpc.XMLRPC):
     @xmlrpc.withRequest
     def xmlrpc_query_state(self, request, game_id, player_token):
         GameMaster.__apply_CORS_headers(request)
+        result = {}
+
         if not self.xmlrpc_validate(request, game_id, player_token=player_token):
-            raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
+            result["error"] = "Invalid token, game pair presented"
+            return result
+
         game = self.games[game_id]
         player = game.find_player(player_token)
         curr_state = game.state
-        result = {}
 
         # Game not begun, lobby state to be sent
         if curr_state is None:
             result["game_state"] = "none"
             result["action"] = "wait"
             result["players"] = list(map(lambda x: x.alias, game.players))
-            if len(game.error_queue):
-                result["error"] = game.error_queue.pop() 
-            return result
+        if curr_state is State.ROUND_CONT:
+            result["game_state"] = "round_running"
+            result["whose_turn"] = game.turn.alias
+
+        if len(game.error_queue):
+            result["error"] = game.error_queue.pop() 
+
+        if not len(game.input_wait_queue):
+            _ = game.step(None)
+
+        return result
 
         #TODO: hack, refactor
         try:
@@ -269,12 +284,14 @@ class GameMaster(xmlrpc.XMLRPC):
     @xmlrpc.withRequest
     def xmlrpc_start_game(self, request, game_id, player_token):
         GameMaster.__apply_CORS_headers(request)
+        result = {}
+
         if not self.xmlrpc_validate(request, game_id, player_token=player_token):
-            raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
+            result["error"] = "Invalid token, game pair presented"
+            return result
+
         game = self.games[game_id]
         game.init()
-        players = game.step(None)
-        # go to round init
-        _ = game.step(players)
-        return True
+
+        return result
 

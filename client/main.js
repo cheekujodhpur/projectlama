@@ -59,14 +59,7 @@ $(document).ready(function(){
     });
 
     $("#l-start-game-button").click(function() {
-        /*
-        $("#l-game-content-container").removeClass("d-none");
-        setTimeout(function(){
-            $("#l-game-content-container").removeClass("l-flex-null");
-        },10);
-        */
-        $("#l-game-content-container").removeClass('d-none');
-        $("#l-sidebar").removeClass("toggled");
+        startGame();
     });
 
     $("#l-sidebar-toggle").click(function() {

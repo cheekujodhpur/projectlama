@@ -4,7 +4,12 @@ var purl = 'http://localhost:1144';
 //var purl = 'https://llama.kumar-ayush.com';
 
 var stateMap = {
-    'none': lobbyWaitHandler
+    'none': lobbyWaitHandler,
+    'round_running': roundRunHandler
+};
+
+function roundRunHandler(data) {
+    console.log(data.whose_turn);
 };
 
 function lobbyWaitHandler(data) {
@@ -39,7 +44,9 @@ function lobbyWaitHandler(data) {
 };
 
 function defaultStateHandler(data) {
-    console.log(data);
+    if ("error" in data) {
+        alert(data.error);
+    };
 };
 
 function stateHandler(data) {
@@ -78,6 +85,26 @@ function push_input(inp) {
         error: function(jqXHR, status, error) {
             // console.log('Error sending input');
             // console.log(error);
+        }
+    });
+};
+
+function startGame() {
+    var lama_game_id = readCookie("gameid");
+    var lama_player_token = readCookie("playertoken");
+    $.xmlrpc({
+        url: purl,
+        methodName: 'start_game',
+        params: [lama_game_id, lama_player_token],
+        success: function(res, status, jqXHR) {
+            $("#l-game-content-container").removeClass('d-none');
+            $("#l-sidebar").removeClass("toggled");
+            $("#l-start-game-button").hide();
+            stateHandler(res[0]);
+        },
+        error: function(jqXHR, status, error) {
+            console.log('Error starting game');
+            console.log(error);
         }
     });
 };
