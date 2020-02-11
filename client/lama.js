@@ -8,6 +8,16 @@ var stateMap = {
     'round_running': roundRunHandler
 };
 
+var colorMap = {
+    '1': '#e00',
+    '2': '#0e0',
+    '3': '#00e',
+    '4': '#ee0',
+    '5': '#0ee',
+    '6': '#e0e',
+    '7': '#eee'
+}
+
 function myTurnHandler(data) {
     var msg = "It is your turn. You can ";
     if (data.expected_action == "PF")
@@ -76,9 +86,10 @@ function stateHandler(data) {
 };
 
 function renderHand(cards) {
-    var card_list = '<ul>';
+    var card_list = '<ul id="l-hand">';
     cards.forEach(function(card) {
-        card_list += '<li>' + card + '</li>';
+        bgStyle = 'style="background-image:linear-gradient(to right,' + colorMap[card] + ', #fff)"'; 
+        card_list += '<li ' + bgStyle + '>' + card + '</li>';
     });
     card_list += '</ul>';
     $("#l-game-content-container").html(card_list);
@@ -175,7 +186,7 @@ function joinGame(game_id) {
             var lama_player_token=res[0]['token'];
             // set if new joiner
             if (readCookie(game_id) == null)
-                setCookie("gameid", game_id);
+                setCookie("gameid", game_id, 1);
 
             setCookie("playertoken", lama_player_token, 1);
             $("#l-menu-form").submit();

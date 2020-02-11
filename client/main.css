@@ -7,6 +7,27 @@
     display: inline-block !important;
 }
 
+#l-hand {
+    display: inline-flex;
+    list-style: none;
+}
+
+#l-hand li {
+    width: 150px;
+    height: 220px;
+    border-radius: 10px;
+    -webkit-shadow: 3px 3px 7px rgba(0,0,0,0.3);
+    box-shadow: 3px 3px 7px rgba(0,0,0,0.3);
+    background-image: linear-gradient(to right, red, #fff);
+    padding: 5px;
+
+    font:50px/110px Georgia, Times New Roman, serif;
+}
+
+#l-hand li:nth-child(n+2) {
+    margin-left:-70px;
+}
+
 #l-sidebar {
     min-height:100vh;
     margin-left: -15rem;

@@ -221,7 +221,6 @@ class GameMaster(xmlrpc.XMLRPC):
         game = self.games[game_id]
         player = game.find_player(player_token)
         curr_state = game.state
-        print(curr_state)
 
         if not len(game.input_wait_queue):
             _ = game.step(None)
