@@ -78,7 +78,11 @@ function defaultStateHandler(data) {
     };
 };
 
+var globalStateStore = null;
 function stateHandler(data) {
+    if (JSON.stringify(data) === JSON.stringify(globalStateStore))
+        return;
+    globalStateStore = data;
     if (data["game_state"] in stateMap)
         stateMap[data["game_state"]](data);
     else
