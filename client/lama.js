@@ -39,6 +39,7 @@ function roundRunHandler(data) {
         $("#l-lobby-message-container").html(msg);
     }
     renderHand(data.hand);
+    renderDiscardPile(data.top_card);
 };
 
 function lobbyWaitHandler(data) {
@@ -89,14 +90,30 @@ function stateHandler(data) {
         defaultStateHandler(data);
 };
 
+function renderCard(card, playable=false) {
+    bgStyle = 'style="background-image:linear-gradient(to right,' + colorMap[card] + ', #fff)"'; 
+    card_text = card == '7' ? 'llama' : card;
+    card_html = '<li ' + bgStyle + '>' + card_text + '</li>';
+
+    jel = $(card_html);
+    if (playable) {
+        jel.attr('onclick', 'playCard(this)');
+        jel.attr('l-data', card);
+    }
+    return jel;
+}
+
+function renderDiscardPile(card) {
+    card_html = renderCard(card);
+    $("#l-discard").append(card_html);
+};
+
 function renderHand(cards) {
-    var card_list = '<ul id="l-hand">';
+    $("#l-hand").html('');
     cards.forEach(function(card) {
-        bgStyle = 'style="background-image:linear-gradient(to right,' + colorMap[card] + ', #fff)"'; 
-        card_list += '<li ' + bgStyle + '>' + card + '</li>';
+        card_html = renderCard(card, playable=true);
+        $("#l-hand").append(card_html);
     });
-    card_list += '</ul>';
-    $("#l-game-content-container").html(card_list);
 };
 
 function queryState() {
@@ -117,17 +134,23 @@ function queryState() {
     game_status_poller = setTimeout(queryState, 500);
 };
 
-function push_input(inp) {
+function playCard(elem) {
+    inp = $(elem).attr('l-data');
+    pushInput(inp);
+};
+
+function pushInput(inp) {
+    var lama_game_id = readCookie("gameid");
+    var lama_player_token = readCookie("playertoken");
     $.xmlrpc({
         url: purl,
         methodName: 'push_input',
-        params: [lama_game_id, lama_player_id, inp],
+        params: [lama_game_id, lama_player_token, inp],
         success: function(res, status, jqXHR) {
-            // console.log(res);
         },
         error: function(jqXHR, status, error) {
-            // console.log('Error sending input');
-            // console.log(error);
+            console.log('Error sending input');
+            console.log(error);
         }
     });
 };
@@ -201,32 +224,3 @@ function joinGame(game_id) {
         }
     });
 };
-
-$(document).ready(function(){
-    $("#btn-play").children().click(function(el){
-        push_input($(this).attr("llama-val"));
-    });
-
-    $("#btn-play-draw").click(function(){
-        push_input("Draw");
-    });
-
-    $("#btn-play-fold").click(function(){
-        push_input("Fold");
-    });
-
-    $("#btn-start-game").click(function(){
-        $.xmlrpc({
-            url: purl,
-            methodName: 'start_game',
-            params: [lama_game_id, lama_player_id],
-            success: function(res, status, jqXHR) {
-                $("#btn-start-game").hide();
-            },
-            error: function(jqXHR, status, error) {
-                // console.log('Error starting game');
-                // console.log(error);
-            }
-        });
-    });
-});

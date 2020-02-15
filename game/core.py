@@ -235,6 +235,7 @@ class GameMaster(xmlrpc.XMLRPC):
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
+            result["top_card"] = top_card = game.deck.top_card()
             if game.turn == player:
                 result["my_turn"] = "yes"
                 result["expected_action"] = game.input_wait_queue[0]
@@ -271,11 +272,16 @@ class GameMaster(xmlrpc.XMLRPC):
     @xmlrpc.withRequest
     def xmlrpc_push_input(self, request, game_id, player_token, inp):
         GameMaster.__apply_CORS_headers(request)
+        result = {}
+
         if not self.xmlrpc_validate(request, game_id, player_token=player_token):
-            raise xmlrpc.Fault(GameErrors.INVALID_TOKEN, f"Invalid token, game pair presented")
+            result["error"] = "Invalid token, game pair presented"
+            return result
+
         game = self.games[game_id]
-        curr_state = game.state
         player = game.find_player(player_token)
+        curr_state = game.state
+
         if game.turn == player:
             _ = game.step(inp)
         return True

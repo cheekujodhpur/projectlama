@@ -7,12 +7,12 @@
     display: inline-block !important;
 }
 
-#l-hand {
-    display: inline-flex;
+.l-cards {
+    display: flex;
     list-style: none;
 }
 
-#l-hand li {
+.l-cards li {
     width: 150px;
     height: 220px;
     border-radius: 10px;
@@ -22,6 +22,10 @@
     padding: 5px;
 
     font:50px/110px Georgia, Times New Roman, serif;
+}
+
+#l-discard li:nth-child(n+2) {
+    margin-left:-120px;
 }
 
 #l-hand li:nth-child(n+2) {
@@ -35,7 +39,7 @@
     -webkit-transition: scale(1.1) translateY(-20px);
     -moz-transition: scale(1.1) translateY(-20px);
     -o-transition: scale(1.1) translateY(-20px);
-};
+}
 
 #l-sidebar {
     min-height:100vh;
