@@ -2,7 +2,7 @@ from .constants import State, Prompt, GameErrors
 from .deck import Deck
 from .players import Player, NetworkPlayer
 from .utils import prompter
-from collections import deque
+from collections import defaultdict, deque
 from itertools import cycle
 from twisted.web import http, server, xmlrpc
 import random
@@ -25,9 +25,9 @@ class Game:
 
     def calc_score(self):
         for player in self.players:
-            self.score[player.id] = player.calc_score()
+            player.calc_score()
         for player in self.players:
-            if self.score[player.id] >= 40:
+            if player.score >= 40:
                 return True
         return False
 
@@ -38,8 +38,7 @@ class NetworkGame(Game):
         self.players = []
         self.error_queue = deque()
         self.input_wait_queue = deque()
-        self.package_send = {}
-        self.package_send2 = {}
+        self.global_message_queue = defaultdict(deque)
         super().__init__()
 
     def init(self):
@@ -130,19 +129,17 @@ class NetworkGame(Game):
             over = self.calc_score()
             print_str = ""
             for player in self.players:
-                print_str = f"{print_str}Player{player.id} has score {self.score[player.id]}...\n"
+                print_str = f"{print_str}Player{player.alias} has score {player.score}...\n"
             if over:
                 winner = sorted(self.players,
-                                key=lambda x: self.score[x.id])[0]
-                print_str = f"{print_str}Player{winner.id} wins.\n"
+                                key=lambda x: x.score)[0]
+                print_str = f"{print_str}Player{winner.alias} wins.\n"
                 for player in self.players:
-                    self.package_send2[player.id] = print_str
-                print(print_str)
+                    self.global_message_queue[player.token].append(print_str)
                 return None, State.GAME_END
             else:
                 for player in self.players:
-                    self.package_send2[player.id] = print_str
-                print(print_str)
+                    self.global_message_queue[player.token].append(print_str)
                 return None, State.ROUND_BEGIN
 
     def get_info(self, prompt):
@@ -238,36 +235,17 @@ class GameMaster(xmlrpc.XMLRPC):
             result["top_card"] = top_card = game.deck.top_card()
             if game.turn == player:
                 result["my_turn"] = "yes"
-                result["expected_action"] = game.input_wait_queue[0]
+                if len(game.input_wait_queue):
+                    result["expected_action"] = game.input_wait_queue.pop()
 
         if len(game.error_queue):
             result["error"] = game.error_queue.pop() 
 
+        msg_for_player = game.global_message_queue[player.token]
+        if len(msg_for_player):
+            result["message"] = msg_for_player.pop()
+
         return result
-
-        #TODO: hack, refactor
-        try:
-            top_card = game.deck.top_card()
-        except:
-            top_card = str(None)
-        player_hand = game.players[player-1].hand
-        player_package = game.package_send.get(player)
-        if curr_state is None:
-            return f"Game has not begun yet. {len(self.games[game_id].players)} players have joined as of now."
-        else:
-            if not game.package_send and not game.package_send2:
-                _ = game.step(None)
-
-            return_dict = {"curr_state": str(curr_state),
-                           "player_action": str(player_package),
-                           "top_card": top_card,
-                           "player_hand": player_hand}
-
-            score_package = game.package_send2.get(player)
-            if score_package:
-                game.package_send2.pop(player, None)
-                return_dict["score_package"]=score_package
-            return return_dict
 
     @xmlrpc.withRequest
     def xmlrpc_push_input(self, request, game_id, player_token, inp):

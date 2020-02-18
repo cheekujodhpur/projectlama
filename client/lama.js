@@ -79,6 +79,12 @@ function defaultStateHandler(data) {
     };
 };
 
+function messageHandler(data) {
+    if ('message' in data) {
+        $("#l-lobby-message-container").append(data['message']);
+    };
+};
+
 var globalStateStore = null;
 function stateHandler(data) {
     if (JSON.stringify(data) === JSON.stringify(globalStateStore))
@@ -88,6 +94,8 @@ function stateHandler(data) {
         stateMap[data["game_state"]](data);
     else
         defaultStateHandler(data);
+
+    messageHandler(data);
 };
 
 function renderCard(card, playable=false) {
