@@ -129,11 +129,11 @@ class NetworkGame(Game):
             over = self.calc_score()
             print_str = ""
             for player in self.players:
-                print_str = f"{print_str}Player{player.alias} has score {player.score}...\n"
+                print_str = f"{print_str}Player {player.alias} has score {player.score}...<br/>"
             if over:
                 winner = sorted(self.players,
                                 key=lambda x: x.score)[0]
-                print_str = f"{print_str}Player{winner.alias} wins.\n"
+                print_str = f"{print_str}Player {winner.alias} wins.<br/>"
                 for player in self.players:
                     self.global_message_queue[player.token].append(print_str)
                 return None, State.GAME_END
@@ -210,6 +210,7 @@ class GameMaster(xmlrpc.XMLRPC):
     def xmlrpc_query_state(self, request, game_id, player_token):
         GameMaster.__apply_CORS_headers(request)
         result = {}
+        result["message"] = []
 
         if not self.xmlrpc_validate(request, game_id, player_token=player_token):
             result["error"] = "Invalid token, game pair presented"
@@ -242,8 +243,8 @@ class GameMaster(xmlrpc.XMLRPC):
             result["error"] = game.error_queue.pop() 
 
         msg_for_player = game.global_message_queue[player.token]
-        if len(msg_for_player):
-            result["message"] = msg_for_player.pop()
+        while len(msg_for_player):
+            result["message"].append(msg_for_player.pop())
 
         return result
 

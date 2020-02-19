@@ -31,13 +31,14 @@ function myTurnHandler(data) {
 };
 
 function roundRunHandler(data) {
+    revealGame();
     if ("my_turn" in data) {
         myTurnHandler(data);
     }
     else {
         var msg = "Whose turn is it? " + data.whose_turn;
         $("#l-lobby-message-container").html(msg);
-    }
+    };
     renderHand(data.hand);
     renderDiscardPile(data.top_card);
 };
@@ -81,7 +82,8 @@ function defaultStateHandler(data) {
 
 function messageHandler(data) {
     if ('message' in data) {
-        $("#l-lobby-message-container").append(data['message']);
+        $("#l-lobby-log-container").append(data['message']);
+        $("#l-lobby-log-container").append("<hr>");
     };
 };
 
