@@ -66,6 +66,10 @@ class NetworkGame(Game):
                 return player
         return None
 
+    def _broadcast_message(self, message):
+        for player in self.players:
+            self.global_message_queue[player.token].append(message)
+
     def evaluate(self, state, info):
         if state is State.GAME_BEGIN:
             return None, State.ROUND_BEGIN
@@ -103,8 +107,10 @@ class NetworkGame(Game):
                     else:
                         if info == "Fold":
                             player.deactivate()
+                            self._broadcast_message(f"Player {player.alias} has folded")
                         elif info == "Draw":
                             player.draw(self.deck)
+                            self._broadcast_message(f"Player {player.alias} has drawn")
                         else:
                             return Prompt.FD, State.ROUND_CONT
                 else:
@@ -113,8 +119,11 @@ class NetworkGame(Game):
                     else:
                         if info == "Fold":
                             player.deactivate()
+                            self._broadcast_message(f"Player {player.alias} has folded")
                         elif deck.playable(info) and info in player.hand:
-                            deck.discard(player.delete(info))
+                            tbd = player.delete(info)
+                            deck.discard(tbd)
+                            self._broadcast_message(f"Player {player.alias} has played {tbd}")
 
                             # round ender if finishes hand
                             if not len(player.hand):
