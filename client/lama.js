@@ -9,13 +9,13 @@ var stateMap = {
 };
 
 var colorMap = {
-    '1': '#e00',
-    '2': '#0e0',
-    '3': '#00e',
-    '4': '#ee0',
-    '5': '#0ee',
-    '6': '#e0e',
-    '7': '#eee'
+    '1': '#e74c3c',
+    '2': '#8e44ad',
+    '3': '#3498db',
+    '4': '#2ecc71',
+    '5': '#16a085',
+    '6': '#e67e22',
+    '7': '#34495e'
 }
 
 function myTurnHandler(data) {
@@ -81,15 +81,42 @@ function defaultStateHandler(data) {
 };
 
 function messageHandler(data) {
+    var currentDate = new Date();
+    var time = currentDate.toLocaleTimeString('en-US', {
+        hour12: false,
+        hour: "numeric",
+        minute: "numeric"
+    });
+
     if ('message' in data && data['message'].length > 0) {
-        var currentDate = new Date();
-        var time = currentDate.toLocaleTimeString('en-US', {
-            hour12: false,
-            hour: "numeric",
-            minute: "numeric"
+        data['message'].forEach(function(message) {
+            procMessage = "<b>" + time + "</b>: " + message + "<br />";
+            $("#l-lobby-log-container").prepend(procMessage);
         });
-        message = "<b>" + time + "</b>: " + data['message'] + "<br />";
-        $("#l-lobby-log-container").prepend(message);
+    };
+
+    if('score' in data && data['score'].length > 0) {
+        freshenDiscardPile();
+        data['score'].forEach(function(message) {
+            if (Array.isArray(message)) {
+                // display score
+                var table = "<table class='table'>";
+                table +=    "<thead><tr><th scope='col'>Player</th><th scope='col'>Score</th></tr></thead>";
+                table +=    "<tbody>";
+                message.forEach(function(playerScore) {
+                    table += "<tr><td>" + playerScore[0] + "</td><td>" + playerScore[1] + "</td></tr>";
+                });
+                table +=    "</tbody></table>";
+                var preMessage = "<b>" + time + "</b>: Round over<br />";
+                $("#l-lobby-log-container").prepend(preMessage);
+                $("#l-lobby-log-container").prepend(table);
+            }
+            else {
+                winner = message['winner']
+                var procMessage = "<b>" + time + "</b>: <span class='l-player-name'>" + winner + "</span> wins.<br />";
+                $("#l-lobby-log-container").prepend(procMessage);
+            }
+        });
     };
 };
 
@@ -98,16 +125,19 @@ function stateHandler(data) {
     if (JSON.stringify(data) === JSON.stringify(globalStateStore))
         return;
     globalStateStore = data;
+
+    // first message handling
+    messageHandler(data);
+
     if (data["game_state"] in stateMap)
         stateMap[data["game_state"]](data);
     else
         defaultStateHandler(data);
 
-    messageHandler(data);
 };
 
 function renderCard(card, playable=false) {
-    bgStyle = 'style="background-image:linear-gradient(to right,' + colorMap[card] + ', #fff)"'; 
+    bgStyle = 'style="background-image:linear-gradient(to right,' + colorMap[card] + ', #ddd)"'; 
     card_text = card == '7' ? 'llama' : card;
     card_html = '<li ' + bgStyle + '>' + card_text + '</li>';
 
@@ -120,8 +150,12 @@ function renderCard(card, playable=false) {
 }
 
 var discardPile_v = null;
+function freshenDiscardPile() {
+    discardPile_v = null;
+    $("#l-discard").html('');
+};
+
 function renderDiscardPile(card, card_v) {
-    console.log(card_v);
     if (card_v == discardPile_v)
         return;
 

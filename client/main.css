@@ -35,10 +35,10 @@
 #l-hand li:hover {
     transition: transform 0.2s ease-in;
 
-    transform: scale(1.1) translateY(-20px);
-    -webkit-transition: scale(1.1) translateY(-20px);
-    -moz-transition: scale(1.1) translateY(-20px);
-    -o-transition: scale(1.1) translateY(-20px);
+    transform: scale(1.02) translateY(-4px);
+    -webkit-transition: scale(1.02) translateY(-4px);
+    -moz-transition: scale(1.02) translateY(-4px);
+    -o-transition: scale(1.02) translateY(-4px);
 }
 
 .l-player-name {

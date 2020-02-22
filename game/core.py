@@ -39,6 +39,7 @@ class NetworkGame(Game):
         self.error_queue = deque()
         self.input_wait_queue = deque()
         self.global_message_queue = defaultdict(deque)
+        self.score_queue = defaultdict(deque)
         super().__init__()
 
     def init(self):
@@ -66,9 +67,10 @@ class NetworkGame(Game):
                 return player
         return None
 
-    def _broadcast_message(self, message):
+    def _broadcast_message(self, message, typ='NORMAL'):
+        queue = self.global_message_queue if typ == 'NORMAL' else self.score_queue
         for player in self.players:
-            self.global_message_queue[player.token].append(message)
+            queue[player.token].append(message)
 
     def evaluate(self, state, info):
         if state is State.GAME_BEGIN:
@@ -136,21 +138,14 @@ class NetworkGame(Game):
 
         elif state is State.ROUND_END:
             over = self.calc_score()
-            print_str = ""
-            for player in self.players:
-                print_str = f"{print_str}<span class='l-player-name'>" \
-                            f"{player.alias}</span> has score {player.score}...<br/>"
+            scores = [(player.alias, player.score) for player in self.players]
+            self._broadcast_message(scores, typ='SPECIAL')
             if over:
                 winner = sorted(self.players,
                                 key=lambda x: x.score)[0]
-                print_str = f"{print_str}<span class='l-player-name'>" \
-                            f"{winner.alias}</span> wins"
-                for player in self.players:
-                    self.global_message_queue[player.token].append(print_str)
+                self._broadcast_message({'winner': winner.alias}, typ='SPECIAL')
                 return None, State.GAME_END
             else:
-                for player in self.players:
-                    self.global_message_queue[player.token].append(print_str)
                 return None, State.ROUND_BEGIN
 
     def get_info(self, prompt):
@@ -222,6 +217,7 @@ class GameMaster(xmlrpc.XMLRPC):
         GameMaster.__apply_CORS_headers(request)
         result = {}
         result["message"] = []
+        result["score"] = []
 
         if not self.xmlrpc_validate(request, game_id, player_token=player_token):
             result["error"] = "Invalid token, game pair presented"
@@ -256,6 +252,10 @@ class GameMaster(xmlrpc.XMLRPC):
         msg_for_player = game.global_message_queue[player.token]
         while len(msg_for_player):
             result["message"].append(msg_for_player.pop())
+
+        special_msg_for_player = game.score_queue[player.token]
+        while len(special_msg_for_player):
+            result["score"].append(special_msg_for_player.pop())
 
         return result
 
