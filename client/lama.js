@@ -40,7 +40,7 @@ function roundRunHandler(data) {
         $("#l-lobby-message-container").html(msg);
     };
     renderHand(data.hand);
-    renderDiscardPile(data.top_card);
+    renderDiscardPile(data.top_card, data.top_card_v);
 };
 
 function lobbyWaitHandler(data) {
@@ -119,9 +119,15 @@ function renderCard(card, playable=false) {
     return jel;
 }
 
-function renderDiscardPile(card) {
+var discardPile_v = null;
+function renderDiscardPile(card, card_v) {
+    console.log(card_v);
+    if (card_v == discardPile_v)
+        return;
+
     card_html = renderCard(card);
     $("#l-discard").append(card_html);
+    discardPile_v = card_v;
 };
 
 function renderHand(cards) {

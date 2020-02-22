@@ -244,7 +244,7 @@ class GameMaster(xmlrpc.XMLRPC):
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
-            result["top_card"] = top_card = game.deck.top_card()
+            result["top_card"], result["top_card_v"] = game.deck.top_card()
             if game.turn == player:
                 result["my_turn"] = "yes"
                 if len(game.input_wait_queue):

@@ -19,10 +19,10 @@ class Deck:
         self.discard_pile.append(n)
 
     def top_card(self):
-        return self.discard_pile[-1]
+        return self.discard_pile[-1], len(self.discard_pile)
 
     def playable(self, cards):
-        top_card = self.top_card()
+        top_card, _ = self.top_card()
         if isinstance(cards, list) and all(isinstance(x, int) for x in cards):
             return ((top_card in cards) or (plus_one(top_card) in cards))
         elif isinstance(cards, int):
