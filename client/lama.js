@@ -81,9 +81,15 @@ function defaultStateHandler(data) {
 };
 
 function messageHandler(data) {
-    if ('message' in data) {
-        $("#l-lobby-log-container").append(data['message']);
-        $("#l-lobby-log-container").append("<hr>");
+    if ('message' in data && data['message'].length > 0) {
+        var currentDate = new Date();
+        var time = currentDate.toLocaleTimeString('en-US', {
+            hour12: false,
+            hour: "numeric",
+            minute: "numeric"
+        });
+        message = "<b>" + time + "</b>: " + data['message'] + "<br />";
+        $("#l-lobby-log-container").prepend(message);
     };
 };
 

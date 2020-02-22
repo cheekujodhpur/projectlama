@@ -107,10 +107,10 @@ class NetworkGame(Game):
                     else:
                         if info == "Fold":
                             player.deactivate()
-                            self._broadcast_message(f"Player {player.alias} has folded")
+                            self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
                         elif info == "Draw":
                             player.draw(self.deck)
-                            self._broadcast_message(f"Player {player.alias} has drawn")
+                            self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has drawn")
                         else:
                             return Prompt.FD, State.ROUND_CONT
                 else:
@@ -119,11 +119,11 @@ class NetworkGame(Game):
                     else:
                         if info == "Fold":
                             player.deactivate()
-                            self._broadcast_message(f"Player {player.alias} has folded")
+                            self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
                         elif deck.playable(info) and info in player.hand:
                             tbd = player.delete(info)
                             deck.discard(tbd)
-                            self._broadcast_message(f"Player {player.alias} has played {tbd}")
+                            self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has played {tbd}")
 
                             # round ender if finishes hand
                             if not len(player.hand):
@@ -138,11 +138,13 @@ class NetworkGame(Game):
             over = self.calc_score()
             print_str = ""
             for player in self.players:
-                print_str = f"{print_str}Player {player.alias} has score {player.score}...<br/>"
+                print_str = f"{print_str}<span class='l-player-name'>" \
+                            f"{player.alias}</span> has score {player.score}...<br/>"
             if over:
                 winner = sorted(self.players,
                                 key=lambda x: x.score)[0]
-                print_str = f"{print_str}Player {winner.alias} wins.<br/>"
+                print_str = f"{print_str}<span class='l-player-name'>" \
+                            f"{winner.alias}</span> wins"
                 for player in self.players:
                     self.global_message_queue[player.token].append(print_str)
                 return None, State.GAME_END

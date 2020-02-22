@@ -21,7 +21,7 @@
     background-image: linear-gradient(to right, red, #fff);
     padding: 5px;
 
-    font:50px/110px Georgia, Times New Roman, serif;
+    font:50px Georgia, Times New Roman, serif;
 }
 
 #l-discard li:nth-child(n+2) {
@@ -41,6 +41,14 @@
     -o-transition: scale(1.1) translateY(-20px);
 }
 
+.l-player-name {
+    text-decoration: underline;
+}
+
+#l-lobby-log-container {
+    font-size: 0.88rem;
+}
+
 #l-sidebar {
     min-height:100vh;
     margin-left: -15rem;
@@ -53,6 +61,13 @@
 
 #l-sidebar.toggled {
     margin-left: 0;
+}
+
+#l-game-container {
+    width: 100%;
+    padding:0px 15px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 #l-game-content-container {
