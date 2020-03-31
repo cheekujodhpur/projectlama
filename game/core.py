@@ -8,7 +8,6 @@ from twisted.web import http, server, xmlrpc
 import random
 import string
 
-
 class Game:
     def __init__(self):
         self.history = []
@@ -36,6 +35,8 @@ class NetworkGame(Game):
     def __init__(self, game_id):
         self.game_id = game_id
         self.players = []
+        self.round_no=1
+        self.log_file=open('game_log.txt','a')
         self.error_queue = deque()
         self.input_wait_queue = deque()
         self.global_message_queue = defaultdict(deque)
@@ -74,7 +75,9 @@ class NetworkGame(Game):
 
     def evaluate(self, state, info):
         if state is State.GAME_BEGIN:
-            return None, State.ROUND_BEGIN
+        	self.log_file.write("NG/"+"\n")
+        	self.log_file.write("Round,Type,Player,Move/Score"+"\n")
+        	return None, State.ROUND_BEGIN
 
         elif state is State.ROUND_BEGIN:
             # deck
@@ -110,9 +113,11 @@ class NetworkGame(Game):
                         if info == "Fold":
                             player.deactivate()
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
+                            self.log_file.write(f"{self.round_no},M,{player.token},{0}\n")
                         elif info == "Draw":
                             player.draw(self.deck)
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has drawn")
+                            self.log_file.write(f"{self.round_no},M,{player.token},{-1}\n")
                         else:
                             return Prompt.FD, State.ROUND_CONT
                 else:
@@ -122,11 +127,12 @@ class NetworkGame(Game):
                         if info == "Fold":
                             player.deactivate()
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
+                            self.log_file.write(f"{self.round_no},M,{player.token},{0}\n")
                         elif deck.playable(info) and info in player.hand:
                             tbd = player.delete(info)
                             deck.discard(tbd)
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has played {tbd}")
-
+                            self.log_file.write(f"{self.round_no},M,{player.token},{tbd}\n")
                             # round ender if finishes hand
                             if not len(player.hand):
                                 return None, State.ROUND_END
@@ -139,6 +145,9 @@ class NetworkGame(Game):
         elif state is State.ROUND_END:
             over = self.calc_score()
             scores = [(player.alias, player.score) for player in self.players]
+            for player in self.players:
+            	self.log_file.write(f"{self.round_no},S,{player.token},{player.score}\n")
+            self.round_no+=1
             self._broadcast_message(scores, typ='SPECIAL')
             if over:
                 winner = sorted(self.players,
@@ -164,7 +173,11 @@ class NetworkGame(Game):
             print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
             return self.get_info(prompt)
+        else:
+        	self.log_file.write("/NG\n")
+        	self.log_file.close()
 
+        	
 class GameMaster(xmlrpc.XMLRPC):
     def __init__(self):
         self.games = {}
@@ -289,4 +302,5 @@ class GameMaster(xmlrpc.XMLRPC):
         game.init()
 
         return result
+
 
