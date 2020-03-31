@@ -74,9 +74,9 @@ class NetworkGame(Game):
             queue[player.token].append(message)
 
     def evaluate(self, state, info):
+        log_info = open("logs.txt", "a")
         if state is State.GAME_BEGIN:
-            log_info = open("logs.txt", "a")
-            log_info.write("Starting a new Game of Lama at time:- " + str(datetime.now()) + '\n' + '\n')
+            log_info.write(f"nG\n{str(datetime.now())}\n\n")
             return None, State.ROUND_BEGIN
 
         elif state is State.ROUND_BEGIN:
@@ -85,11 +85,8 @@ class NetworkGame(Game):
             self.deck.start()
 
             #Logging the top card when the round starts
-            log_info = open("logs.txt", "a")
-            log_info.write("New Round has started.\n" + '\n')
-            log_info.write("The top card is " + str(self.deck.discard_pile[0]) + '\n')
-            log_info.close()
-            
+            log_info.write(f"nR\n\n")
+            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n") 
             self.package_send2 = {}
             
             # first draw
@@ -120,26 +117,22 @@ class NetworkGame(Game):
                         if info == "Fold":
                             player.deactivate()
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
-                            log_info = open("logs.txt", "a")
-                            log_info.write('\n' + player.alias + "'s turn\n")
-                            log_info.write(player.alias + "'s hand is: ")
+                            log_info.write(f"pT\n{player.alias}\n")
                             for x in player.hand:
-                                log_info.write(str(x) + " ")
-                            log_info.write('\n' + player.alias + " has folded." + '\n' + '\n')
-                            log_info.write("The top card is " + str(self.deck.discard_pile[-1]) + '\n')
+                                log_info.write(f"{str(x)} ")
+                            log_info.write(f"\nf\n\n")
+                            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n")
                             log_info.close()
-
+                            
                         elif info == "Draw":
-                            log_info = open("logs.txt", "a")
-                            log_info.write('\n' + player.alias + "'s turn\n")
-                            log_info.write(player.alias + "'s hand is: ")
+                            log_info.write(f"pT\n{player.alias}\n")
                             for x in player.hand:
-                                log_info.write(str(x) + " ")
+                                log_info.write(f"{str(x)} ")
                             player.draw(self.deck)
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has drawn")
-                            log_info.write('\n' + player.alias + " has drawn.\n" + '\n')
-                            log_info.write("The top card is " + str(self.deck.discard_pile[-1]) + '\n')
-                            log_info.close()
+                            log_info.write(f"\nd\n\n")
+                            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n")                           
+                            log_info.close()                        
                         else:
                             return Prompt.FD, State.ROUND_CONT
                 else:
@@ -149,32 +142,27 @@ class NetworkGame(Game):
                         if info == "Fold":
                             player.deactivate()
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
-                            log_info = open("logs.txt", "a")
-                            log_info.write('\n' + player.alias + "'s turn\n")
-                            log_info.write(player.alias + "'s hand is: ")
+                            log_info.write(f"pT\n{player.alias}\n")
                             for x in player.hand:
-                                log_info.write(str(x) + " ")
-                            log_info.write('\n' + player.alias + "has folded.\n" + '\n')
-                            log_info.write("The top card is " + str(self.deck.discard_pile[-1]) + '\n')
+                                log_info.write(f"{str(x)} ")
+                            log_info.write(f"\nf")
+                            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n")
                             log_info.close()
                         elif deck.playable(info) and info in player.hand:
-                            log_info = open("logs.txt", "a")
-                            log_info.write('\n' + player.alias + "'s turn\n")
-                            log_info.write(player.alias + "'s hand is: ")
+                            log_info.write(f"pT\n{player.alias}\n")                            
                             for x in player.hand:
-                                log_info.write(str(x) + " ")
+                                log_info.write(f"{str(x)} ")
                             tbd = player.delete(info)
                             deck.discard(tbd)
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has played {tbd}")
-                            log_info.write('\n' + player.alias + " has played " + str(tbd) + '\n' + '\n')
-                            log_info.write("The top card is " + str(self.deck.discard_pile[-1]) + '\n')
-                            log_info.close()
-
+                            log_info.write(f"\np{tbd}\n")
                             # round ender if finishes hand
                             if not len(player.hand):
-                                log_info = open("logs.txt", "a")
-                                log_info.write(player.alias + " has finished their hand.\n")
+                                log_info.write(f"\nhF\n\n")
                                 return None, State.ROUND_END
+                            else:
+                                log_info.write(f"\ntC\n{str(self.deck.discard_pile[0])}\n\n")
+                            log_info.close()
                         else:
                             return Prompt.PF, State.ROUND_CONT
 
@@ -182,20 +170,19 @@ class NetworkGame(Game):
             return None, State.ROUND_CONT
 
         elif state is State.ROUND_END:
-            log_info = open("logs.txt", "a")
-            log_info.write('\n' + "The Round has ended.\n" + '\n')
+            log_info.write(f"rE\n")
             over = self.calc_score()
             scores = [(player.alias, player.score) for player in self.players]
             for player in self.players:
-                log_info.write(player.alias + " has a score of " + str(player.score) + '\n')
+                log_info.write(f"{player.alias},{player.score}\n")
             log_info.write('\n')
             self._broadcast_message(scores, typ='SPECIAL')
             if over:
                 winner = sorted(self.players,
                                 key=lambda x: x.score)[0]
                 self._broadcast_message({'winner': winner.alias}, typ='SPECIAL')
-                log_info.write('\n' + "The game has ended\n")
-                log_info.write("The Winner is " + winner.alias + '\n' + '\n')
+                log_info.write(f"gE\n")
+                log_info.write(f"{winner.alias}\n\n")
                 log_info.close()
                 return None, State.GAME_END
             else:
