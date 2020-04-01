@@ -36,6 +36,8 @@ class NetworkGame(Game):
     def __init__(self, game_id):
         self.game_id = game_id
         self.players = []
+        self.round_no = 1
+        self.log_file = open('game_log.txt', 'a')
         self.error_queue = deque()
         self.input_wait_queue = deque()
         self.global_message_queue = defaultdict(deque)
@@ -74,6 +76,8 @@ class NetworkGame(Game):
 
     def evaluate(self, state, info):
         if state is State.GAME_BEGIN:
+            self.log_file.write("NG/\n")
+            self.log_file.write("Round,Type,Player,Move/Score,TopCard(BeforeMove),PlayerHand(AfterMove)\n")
             return None, State.ROUND_BEGIN
 
         elif state is State.ROUND_BEGIN:
@@ -98,7 +102,7 @@ class NetworkGame(Game):
             if not sum(map(lambda x: x.active, self.players)):
                 return None, State.ROUND_END
 
-            player = self.turn 
+            player = self.turn
             deck = self.deck
             if player.active:
                 if not deck.playable(player.hand):
@@ -109,10 +113,14 @@ class NetworkGame(Game):
                     else:
                         if info == "Fold":
                             player.deactivate()
+                            curr_hand = ''.join([str(i) for i in player.hand])
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
+                            self.log_file.write(f"{self.round_no},M,{player.token},{0},{self.deck.discard_pile[-1]},{curr_hand}\n")
                         elif info == "Draw":
                             player.draw(self.deck)
+                            curr_hand = ''.join([str(i) for i in player.hand])
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has drawn")
+                            self.log_file.write(f"{self.round_no},M,{player.token},{-1},{self.deck.discard_pile[-1]},{curr_hand}\n")
                         else:
                             return Prompt.FD, State.ROUND_CONT
                 else:
@@ -122,10 +130,14 @@ class NetworkGame(Game):
                         if info == "Fold":
                             player.deactivate()
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
+                            curr_hand = ''.join([str(i) for i in player.hand])
+                            self.log_file.write(f"{self.round_no},M,{player.token},{0},{self.deck.discard_pile[-1]},{curr_hand}\n")
                         elif deck.playable(info) and info in player.hand:
                             tbd = player.delete(info)
                             deck.discard(tbd)
+                            curr_hand = ''.join([str(i) for i in player.hand])
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has played {tbd}")
+                            self.log_file.write(f"{self.round_no},M,{player.token},{tbd},{self.deck.discard_pile[-2]},{curr_hand}\n")
 
                             # round ender if finishes hand
                             if not len(player.hand):
@@ -139,6 +151,9 @@ class NetworkGame(Game):
         elif state is State.ROUND_END:
             over = self.calc_score()
             scores = [(player.alias, player.score) for player in self.players]
+            for player in self.players:
+                self.log_file.write(f"{self.round_no},S,{player.token},{player.score},,\n")
+            self.round_no += 1
             self._broadcast_message(scores, typ='SPECIAL')
             if over:
                 winner = sorted(self.players,
@@ -164,6 +179,10 @@ class NetworkGame(Game):
             print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
             return self.get_info(prompt)
+        else:
+            self.log_file.write("/NG\n")
+            self.log_file.close()
+
 
 class GameMaster(xmlrpc.XMLRPC):
     def __init__(self):
@@ -202,7 +221,7 @@ class GameMaster(xmlrpc.XMLRPC):
         if game_id not in self.games:
             return False
         elif player_token is not None:
-            search = sum(map(lambda x:x.token == player_token, self.games[game_id].players))
+            search = sum(map(lambda x: x.token == player_token, self.games[game_id].players))
             if not search:
                 return False
         return True
@@ -247,7 +266,7 @@ class GameMaster(xmlrpc.XMLRPC):
                     result["expected_action"] = game.input_wait_queue.pop()
 
         if len(game.error_queue):
-            result["error"] = game.error_queue.pop() 
+            result["error"] = game.error_queue.pop()
 
         msg_for_player = game.global_message_queue[player.token]
         while len(msg_for_player):
