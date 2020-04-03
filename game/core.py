@@ -37,6 +37,7 @@ class NetworkGame(Game):
         self.game_id = game_id
         self.players = []
         self.round_no = 1
+        self.num_AI = 0
         self.log_file = open('game_log.txt', 'a')
         self.error_queue = deque()
         self.input_wait_queue = deque()
@@ -61,6 +62,33 @@ class NetworkGame(Game):
             return {"token": player_token}
         else:
             return {"error": "Game is full"}
+
+    def add_AIplayer(self):
+        if len(self.players) < 6:
+            player_token = ''.join(
+                random.choices(
+                    string.ascii_uppercase +
+                    string.digits,
+                    k=5))
+            self.players.append(NetworkPlayer('AI', player_token, auto=True))
+            return {"token": player_token}
+        else:
+            return {"error": "Game is full.Can't add AI player"}
+
+    def moveAI(self, player):
+        def DorF():
+            if len(set(player.hand)) < 3 or player.score < 11:
+                return 'Fold'
+            else:
+                return 'Draw'
+        if player.active:
+            if not len(player.hand):
+                return None
+            elif sum([self.deck.playable(card) for card in player.hand]):
+                return str(player.hand[[self.deck.playable(card) for card in player.hand].index(1)])
+            else:
+                return DorF()
+        return None
 
     def find_player(self, player_token):
         # validate guarantees you will find one
@@ -146,6 +174,7 @@ class NetworkGame(Game):
                             return Prompt.PF, State.ROUND_CONT
 
             self.advance_turn()
+
             return None, State.ROUND_CONT
 
         elif state is State.ROUND_END:
@@ -251,11 +280,16 @@ class GameMaster(xmlrpc.XMLRPC):
 
         # Game not begun, lobby state to be sent
         if curr_state is None:
+            if not game.num_AI:
+                game.add_AIplayer()
+                game.num_AI += 1
             result["game_state"] = "none"
             result["action"] = "wait"
             result["players"] = list(map(lambda x: x.alias, game.players))
 
         if curr_state is State.ROUND_CONT:
+            if(game.turn.auto):
+                temp = game.step(game.moveAI(game.turn))
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
@@ -308,4 +342,3 @@ class GameMaster(xmlrpc.XMLRPC):
         game.init()
 
         return result
-
