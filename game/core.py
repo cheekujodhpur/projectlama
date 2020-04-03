@@ -1,7 +1,7 @@
 from .constants import State, Prompt, GameErrors
 from .deck import Deck
 from .players import Player, NetworkPlayer
-from .utils import prompter
+from .utils import prompter, plus_one
 from collections import defaultdict, deque
 from itertools import cycle
 from twisted.web import http, server, xmlrpc
@@ -65,15 +65,15 @@ class NetworkGame(Game):
 
     def add_AIplayer(self):
         if len(self.players) < 6:
-            player_token = ''.join(
+            player_token = ''.join(['AI'] + 
                 random.choices(
                     string.ascii_uppercase +
                     string.digits,
-                    k=5))
+                    k=3))
             self.players.append(NetworkPlayer('AI', player_token, auto=True))
             return {"token": player_token}
         else:
-            return {"error": "Game is full.Can't add AI player"}
+            return {"error": "Game is full. Can't add AI player"}
 
     def moveAI(self, player):
         def DorF():
@@ -81,11 +81,16 @@ class NetworkGame(Game):
                 return 'Fold'
             else:
                 return 'Draw'
+        
+        def playable(card, top_card):
+            return card in [top_card, plus_one(top_card)]
+        
         if player.active:
+            top_card, _ = deck.top_card()
             if not len(player.hand):
                 return None
-            elif sum([self.deck.playable(card) for card in player.hand]):
-                return str(player.hand[[self.deck.playable(card) for card in player.hand].index(1)])
+            elif sum([playable(card, top_card) for card in player.hand]):
+                return str([playable(card, top_card) for card in player.hand].index(True))
             else:
                 return DorF()
         return None
