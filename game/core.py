@@ -86,11 +86,10 @@ class NetworkGame(Game):
             return card in [top_card, plus_one(top_card)]
         
         if player.active:
-            top_card, _ = deck.top_card()
             if not len(player.hand):
                 return None
-            elif sum([playable(card, top_card) for card in player.hand]):
-                return str([playable(card, top_card) for card in player.hand].index(True))
+            elif sum([self.deck.playable(card) for card in player.hand]):
+                return str(player.hand[[self.deck.playable(card) for card in player.hand].index(1)])
             else:
                 return DorF()
         return None
