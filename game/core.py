@@ -285,8 +285,6 @@ class GameMaster(xmlrpc.XMLRPC):
             result["players"] = list(map(lambda x: x.alias, game.players))
 
         if curr_state is State.ROUND_CONT:
-            if(game.turn.auto):
-                temp = game.step(game.moveAI(game.turn))
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
@@ -306,7 +304,10 @@ class GameMaster(xmlrpc.XMLRPC):
         special_msg_for_player = game.score_queue[player.token]
         while len(special_msg_for_player):
             result["score"].append(special_msg_for_player.pop())
-
+        
+        if curr_state is State.ROUND_CONT:
+            if(game.turn.auto):
+                _ = game.step(game.moveAI(game.turn))
         return result
 
     @xmlrpc.withRequest
