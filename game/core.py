@@ -1,7 +1,7 @@
 from .constants import State, Prompt, GameErrors
 from .deck import Deck
 from .players import Player, NetworkPlayer
-from .utils import prompter
+from .utils import prompter, plus_one
 from collections import defaultdict, deque
 from itertools import cycle
 from twisted.web import http, server, xmlrpc
@@ -14,7 +14,7 @@ class Game:
     def __init__(self):
         self.history = []
         self.state = None
-
+        self.num_bots = 0
         self.turn_cycler = None
         self.turn = None
 
@@ -60,6 +60,31 @@ class NetworkGame(Game):
             return {"token": player_token}
         else:
             return {"error": "Game is full"}
+
+    def add_bot(self):
+        if len(self.players) < 6:
+            alias = "Bot" + str(self.num_bots)
+            player_token = ''.join(
+                random.choices(
+                    #Might help to distinguish between players and bots
+                    string.ascii_lowercase +
+                    string.digits,
+                    k=5))
+            self.players.append(NetworkPlayer(alias, player_token))
+            return {"token": player_token}
+        else:
+            return {"error": "Game is full"}
+
+    def logic_bot(self, player, discard_pile):
+        if player.active == False:
+            return None
+        for card in player.hand:
+            if card ==  discard_pile[-1] or card == plus_one(discard_pile[-1]):
+                return card
+        player.calc_score()
+        if player.score < 15:
+            return "Fold"
+        return "Draw"
 
     def find_player(self, player_token):
         # validate guarantees you will find one
@@ -273,11 +298,15 @@ class GameMaster(xmlrpc.XMLRPC):
 
         # Game not begun, lobby state to be sent
         if curr_state is None:
+            if(game.num_bots==0):
+                game.num_bots+=1
+                game.add_bot()
             result["game_state"] = "none"
             result["action"] = "wait"
             result["players"] = list(map(lambda x: x.alias, game.players))
 
         if curr_state is State.ROUND_CONT:
+
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
