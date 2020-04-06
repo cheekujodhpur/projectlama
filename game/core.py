@@ -14,7 +14,6 @@ class Game:
     def __init__(self):
         self.history = []
         self.state = None
-        self.num_bots = 0
         self.turn_cycler = None
         self.turn = None
 
@@ -37,6 +36,7 @@ class NetworkGame(Game):
     def __init__(self, game_id):
         self.game_id = game_id
         self.players = []
+        self.num_bots = 0
         self.error_queue = deque()
         self.input_wait_queue = deque()
         self.global_message_queue = defaultdict(deque)
@@ -63,6 +63,7 @@ class NetworkGame(Game):
 
     def add_bot(self):
         if len(self.players) < 6:
+            self.num_bots+=1
             alias = "Bot" + str(self.num_bots)
             player_token = ''.join(
                 random.choices(
@@ -279,6 +280,11 @@ class GameMaster(xmlrpc.XMLRPC):
         return self.games[game_id].add_player(alias)
 
     @xmlrpc.withRequest
+    def xmlrpc_add(self, request, game_id):
+        GameMaster.__apply_CORS_headers(request)
+        return self.games[game_id].add_bot()
+
+    @xmlrpc.withRequest
     def xmlrpc_query_state(self, request, game_id, player_token):
         GameMaster.__apply_CORS_headers(request)
         result = {}
@@ -298,9 +304,6 @@ class GameMaster(xmlrpc.XMLRPC):
 
         # Game not begun, lobby state to be sent
         if curr_state is None:
-            if(game.num_bots==0):
-                game.num_bots+=1
-                game.add_bot()
             result["game_state"] = "none"
             result["action"] = "wait"
             result["players"] = list(map(lambda x: x.alias, game.players))
