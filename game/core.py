@@ -80,7 +80,7 @@ class NetworkGame(Game):
             return None
         for card in player.hand:
             if card ==  discard_pile[-1] or card == plus_one(discard_pile[-1]):
-                return card
+                return str(card)
         player.calc_score()
         if player.score < 15:
             return "Fold"
@@ -311,6 +311,10 @@ class GameMaster(xmlrpc.XMLRPC):
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
             result["top_card"], result["top_card_v"] = game.deck.top_card()
+
+            if(game.turn.token.islower()):
+                _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
+            
             if game.turn == player:
                 result["my_turn"] = "yes"
                 if len(game.input_wait_queue):
