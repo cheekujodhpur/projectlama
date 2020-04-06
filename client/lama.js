@@ -68,6 +68,10 @@ function lobbyWaitHandler(data) {
         msg = msg + "Lobby is full.<br />";
     };
     $("#l-lobby-message-container").html(msg);
+    
+    // display the Add Bot button
+    if (data.players[0] == myAlias)
+        $("#l-add-bot-button").removeClass("d-none");
 
     // display the start button
     if (data.players[0] == myAlias)
@@ -214,6 +218,7 @@ function pushInput(inp) {
 function revealGame() {
     $("#l-game-content-container").removeClass('d-none');
     $("#l-sidebar").removeClass("toggled");
+    $("#l-add-bot-button-button").hide();
     $("#l-start-game-button").hide();
 };
 
@@ -231,6 +236,33 @@ function startGame() {
         },
         error: function(jqXHR, status, error) {
             console.log('Error starting game');
+            console.log(error);
+        }
+    });
+};
+
+function addBot() {
+    var game_id = readCookie("gameid");
+    $.xmlrpc({
+        url: purl,
+        methodName: 'add',
+        params: [game_id],
+        success: function(res, status, jqXHR) {
+            if("error" in res[0]) {
+                alert(res[0]["error"]);
+                return;
+            };
+            // else go on
+            var lama_player_token=res[0]['token'];
+            // set if new joiner
+            if (readCookie(game_id) == null)
+                setCookie("gameid", game_id, 1);
+
+            setCookie("playertoken", lama_player_token, 1);
+            $("#l-menu-form").submit();
+        },
+        error: function(jqXHR, status, error) {
+            console.log('Error adding Bot to game');
             console.log(error);
         }
     });
