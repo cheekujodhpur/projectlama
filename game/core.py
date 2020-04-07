@@ -1,7 +1,7 @@
 from .constants import State, Prompt, GameErrors
 from .deck import Deck
 from .players import Player, NetworkPlayer
-from .utils import prompter, plus_one
+from .utils import prompter
 from collections import defaultdict, deque
 from itertools import cycle
 from twisted.web import http, server, xmlrpc
@@ -70,8 +70,8 @@ class NetworkGame(Game):
                     string.ascii_uppercase +
                     string.digits,
                     k=3))
-            self.players.append(NetworkPlayer('AI', player_token, auto=True))
-            return {"token": player_token}
+            self.players.append(NetworkPlayer(player_token, player_token, auto=True))
+            return {"token": player_token, "alias": player_token}
         else:
             return {"error": "Game is full. Can't add AI player"}
 
@@ -81,9 +81,6 @@ class NetworkGame(Game):
                 return 'Fold'
             else:
                 return 'Draw'
-        
-        def playable(card, top_card):
-            return card in [top_card, plus_one(top_card)]
         
         if player.active:
             if not len(player.hand):
@@ -178,7 +175,6 @@ class NetworkGame(Game):
                             return Prompt.PF, State.ROUND_CONT
 
             self.advance_turn()
-
             return None, State.ROUND_CONT
 
         elif state is State.ROUND_END:
@@ -284,16 +280,11 @@ class GameMaster(xmlrpc.XMLRPC):
 
         # Game not begun, lobby state to be sent
         if curr_state is None:
-            if not game.num_AI:
-                game.add_AIplayer()
-                game.num_AI += 1
             result["game_state"] = "none"
             result["action"] = "wait"
             result["players"] = list(map(lambda x: x.alias, game.players))
 
         if curr_state is State.ROUND_CONT:
-            if(game.turn.auto):
-                temp = game.step(game.moveAI(game.turn))
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
@@ -313,7 +304,10 @@ class GameMaster(xmlrpc.XMLRPC):
         special_msg_for_player = game.score_queue[player.token]
         while len(special_msg_for_player):
             result["score"].append(special_msg_for_player.pop())
-
+        
+        if curr_state is State.ROUND_CONT:
+            if(game.turn.auto):
+                _ = game.step(game.moveAI(game.turn))
         return result
 
     @xmlrpc.withRequest
@@ -334,6 +328,14 @@ class GameMaster(xmlrpc.XMLRPC):
         return True
 
     @xmlrpc.withRequest
+    def xmlrpc_add_ai_player(self, request, game_id):
+        GameMaster.__apply_CORS_headers(request)
+        game = self.games[game_id]
+        game.num_AI += 1
+        return game.add_AIplayer()
+
+
+    @xmlrpc.withRequest
     def xmlrpc_start_game(self, request, game_id, player_token):
         GameMaster.__apply_CORS_headers(request)
         result = {}
@@ -346,3 +348,4 @@ class GameMaster(xmlrpc.XMLRPC):
         game.init()
 
         return result
+

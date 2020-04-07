@@ -61,6 +61,10 @@ $(document).ready(function(){
         createGame(); 
     });
 
+	$("#l-add-ai-player").click(function() {
+		initiateAI();
+	});
+
     $("#l-start-game-button").click(function() {
         startGame();
     });
