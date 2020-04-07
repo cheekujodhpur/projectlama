@@ -312,7 +312,7 @@ class GameMaster(xmlrpc.XMLRPC):
             result["hand"] = player.hand
             result["top_card"], result["top_card_v"] = game.deck.top_card()
 
-            if(game.turn.token.islower()):
+            if(game.turn.token[0].islower()):
                 _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
             
             if game.turn == player:
