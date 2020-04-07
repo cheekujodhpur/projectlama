@@ -218,7 +218,7 @@ function pushInput(inp) {
 function revealGame() {
     $("#l-game-content-container").removeClass('d-none');
     $("#l-sidebar").removeClass("toggled");
-    $("#l-add-bot-button").hide();
+    $("#l-add-bot-button-button").hide();
     $("#l-start-game-button").hide();
 };
 
@@ -241,6 +241,23 @@ function startGame() {
     });
 };
 
+function createGame() {
+    $.xmlrpc({
+        url: purl,
+        methodName: 'open',
+        params: [],
+        success: function(res, status, jqXHR) {
+            var lama_game_id=res[0];
+            setCookie("gameid", lama_game_id, 1);
+            joinGame(lama_game_id);
+        },
+        error: function(jqXHR, status, error) {
+            console.log("Error opening game");
+            console.log(error);
+        }
+    });
+};
+
 function addBot() {
     var game_id = readCookie("gameid");
     $.xmlrpc({
@@ -254,32 +271,17 @@ function addBot() {
             };
             // else go on
             var lama_player_token=res[0]['token'];
+            
             // set if new joiner
-            if (readCookie(game_id) == null)
-                setCookie("gameid", game_id, 1);
-
+            if (readCookie(game_id) == null){
+                setCookie("alias", Bot, 1);
+                setCookie("gameid", game_id, 1);};
+            
             setCookie("playertoken", lama_player_token, 1);
             $("#l-menu-form").submit();
         },
         error: function(jqXHR, status, error) {
             console.log('Error adding Bot to game');
-            console.log(error);
-        }
-    });
-};
-
-function createGame() {
-    $.xmlrpc({
-        url: purl,
-        methodName: 'open',
-        params: [],
-        success: function(res, status, jqXHR) {
-            var lama_game_id=res[0];
-            setCookie("gameid", lama_game_id, 1);
-            joinGame(lama_game_id);
-        },
-        error: function(jqXHR, status, error) {
-            console.log("Error opening game");
             console.log(error);
         }
     });
