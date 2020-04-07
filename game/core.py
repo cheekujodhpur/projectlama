@@ -76,7 +76,7 @@ class NetworkGame(Game):
             return {"error": "Game is full. Can't add AI player"}
 
     def moveAI(self, player):
-        def DorF():
+        def draw_or_fold():
             if len(set(player.hand)) < 3 or player.score < 11:
                 return 'Fold'
             else:
@@ -88,7 +88,7 @@ class NetworkGame(Game):
             elif sum([self.deck.playable(card) for card in player.hand]):
                 return str(player.hand[[self.deck.playable(card) for card in player.hand].index(1)])
             else:
-                return DorF()
+                return draw_or_fold()
         return None
 
     def find_player(self, player_token):
@@ -306,7 +306,7 @@ class GameMaster(xmlrpc.XMLRPC):
             result["score"].append(special_msg_for_player.pop())
         
         if curr_state is State.ROUND_CONT:
-            if(game.turn.auto):
+            if game.turn.auto:
                 _ = game.step(game.moveAI(game.turn))
         return result
 
