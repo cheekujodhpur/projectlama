@@ -227,7 +227,7 @@ class NetworkGame(Game):
 
     def step(self, info):
         if self.state is not State.GAME_END:
-            prompt, new_state = self.evaluate(self.state, info)
+            prompt, new_state = self.evaluate(self.state, str(info))
             print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
             return self.get_info(prompt)
@@ -314,6 +314,10 @@ class GameMaster(xmlrpc.XMLRPC):
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
             result["top_card"], result["top_card_v"] = game.deck.top_card()
+
+            if(game.turn.token[0].islower()):
+                    _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
+    
             if game.turn == player:
                 result["my_turn"] = "yes"
                 if len(game.input_wait_queue):
