@@ -37,7 +37,6 @@ class NetworkGame(Game):
         self.game_id = game_id
         self.players = []
         self.round_no = 1
-        self.num_AI = 0
         self.log_file = open('game_log.txt', 'a')
         self.error_queue = deque()
         self.input_wait_queue = deque()
@@ -331,7 +330,6 @@ class GameMaster(xmlrpc.XMLRPC):
     def xmlrpc_add_ai_player(self, request, game_id):
         GameMaster.__apply_CORS_headers(request)
         game = self.games[game_id]
-        game.num_AI += 1
         return game.add_AIplayer()
 
 
