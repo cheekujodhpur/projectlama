@@ -218,7 +218,7 @@ function pushInput(inp) {
 function revealGame() {
     $("#l-game-content-container").removeClass('d-none');
     $("#l-sidebar").removeClass("toggled");
-    $("#l-add-bot-button-button").hide();
+    $("#l-add-bot-button").hide();
     $("#l-start-game-button").hide();
 };
 
