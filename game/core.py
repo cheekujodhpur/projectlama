@@ -62,6 +62,34 @@ class NetworkGame(Game):
         else:
             return {"error": "Game is full"}
 
+    def add_AIplayer(self):
+        if len(self.players) < 6:
+            player_token = ''.join(['AI'] + 
+                random.choices(
+                    string.ascii_uppercase +
+                    string.digits,
+                    k=3))
+            self.players.append(NetworkPlayer(player_token, player_token, auto=True))
+            return {"token": player_token, "alias": player_token}
+        else:
+            return {"error": "Game is full. Can't add AI player"}
+
+    def moveAI(self, player):
+        def draw_or_fold():
+            if len(set(player.hand)) < 3 or player.score < 11:
+                return 'Fold'
+            else:
+                return 'Draw'
+        
+        if player.active:
+            if not len(player.hand):
+                return None
+            elif sum([self.deck.playable(card) for card in player.hand]):
+                return str(player.hand[[self.deck.playable(card) for card in player.hand].index(1)])
+            else:
+                return draw_or_fold()
+        return None
+
     def find_player(self, player_token):
         # validate guarantees you will find one
         for player in self.players:
@@ -275,7 +303,10 @@ class GameMaster(xmlrpc.XMLRPC):
         special_msg_for_player = game.score_queue[player.token]
         while len(special_msg_for_player):
             result["score"].append(special_msg_for_player.pop())
-
+        
+        if curr_state is State.ROUND_CONT:
+            if game.turn.auto:
+                _ = game.step(game.moveAI(game.turn))
         return result
 
     @xmlrpc.withRequest
@@ -294,6 +325,13 @@ class GameMaster(xmlrpc.XMLRPC):
         if game.turn == player:
             _ = game.step(inp)
         return True
+
+    @xmlrpc.withRequest
+    def xmlrpc_add_ai_player(self, request, game_id):
+        GameMaster.__apply_CORS_headers(request)
+        game = self.games[game_id]
+        return game.add_AIplayer()
+
 
     @xmlrpc.withRequest
     def xmlrpc_start_game(self, request, game_id, player_token):

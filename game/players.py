@@ -45,8 +45,8 @@ class Player:
 
 
 class NetworkPlayer(Player):
-    def __init__(self, alias, token):
+    def __init__(self, alias, token, auto=False):
         self.alias = alias
         self.token = token
-        super().__init__()
+        super().__init__(auto)
 

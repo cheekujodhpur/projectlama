@@ -70,8 +70,10 @@ function lobbyWaitHandler(data) {
     $("#l-lobby-message-container").html(msg);
 
     // display the start button
-    if (data.players[0] == myAlias)
+    if (data.players[0] == myAlias) {
+		$("#l-add-ai-player").removeClass("d-none");
         $("#l-start-game-button").removeClass("d-none");
+	};
 };
 
 function defaultStateHandler(data) {
@@ -214,7 +216,37 @@ function pushInput(inp) {
 function revealGame() {
     $("#l-game-content-container").removeClass('d-none');
     $("#l-sidebar").removeClass("toggled");
+	$("#l-add-ai-player").hide();
     $("#l-start-game-button").hide();
+};
+
+function initiateAI() {
+	var lama_game_id = readCookie("gameid");
+	$.xmlrpc({
+		url: purl,
+		methodName: 'add_ai_player',
+		params: [lama_game_id],
+		success: function(res, status, jqXHR) {
+			if ("error" in res[0]) {
+				alert(res[0]["error"]);
+				return;
+			};
+			var lama_player_alias = res[0]["alias"];
+			var lama_player_token = res[0]["token"];
+
+			if (readCookie(game_id) == null) {
+                setCookie("gameid", lama_game_id, 1);
+				setCookie("alias", lama_player_alias, 1);
+			};
+
+            setCookie("playertoken", lama_player_token, 1);
+            $("#l-menu-form").submit();
+		},
+		error: function(jqXHR, status, error) {
+			console.log('Error sending input');
+			console.log(error);
+		}
+	});
 };
 
 function startGame() {
