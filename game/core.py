@@ -76,14 +76,21 @@ class NetworkGame(Game):
         else:
             return {"error": "Game is full"}
 
+    def bot_score(self, player):
+        score = 0
+        uniq_hand = list(set(player.hand))
+        increment = sum(map(lambda x: x if x < 7 else 10, uniq_hand))
+        score = score + increment
+        return score
+
     def logic_bot(self, player, discard_pile):
         if player.active == False:
             return None
         for card in player.hand:
             if card ==  discard_pile[-1] or card == plus_one(discard_pile[-1]):
                 return card
-        player.calc_score()
-        if player.score < 15:
+        score = self.bot_score(player)
+        if score < 15:
             return "Fold"
         return "Draw"
 
@@ -128,7 +135,7 @@ class NetworkGame(Game):
             if info is not None and info.isdigit():
                 info = int(info)
 
-            if not sum(map(lambda x: x.act, self.players)):
+            if not sum(map(lambda x: x.active, self.players)):
                 return None, State.ROUND_END
 
             player = self.turn 
@@ -299,6 +306,7 @@ class GameMaster(xmlrpc.XMLRPC):
         player = game.find_player(player_token)
         curr_state = game.state
 
+
         if not len(game.input_wait_queue):
             _ = game.step(None)
 
@@ -310,18 +318,20 @@ class GameMaster(xmlrpc.XMLRPC):
 
         if curr_state is State.ROUND_CONT:
 
+           
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
             result["top_card"], result["top_card_v"] = game.deck.top_card()
 
-            if(game.turn.token[0].islower()):
-                    _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
-    
+            if game.turn.token[0].islower():
+                _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
+                
             if game.turn == player:
                 result["my_turn"] = "yes"
                 if len(game.input_wait_queue):
                     result["expected_action"] = game.input_wait_queue.pop()
+                    
 
         if len(game.error_queue):
             result["error"] = game.error_queue.pop() 
@@ -349,7 +359,7 @@ class GameMaster(xmlrpc.XMLRPC):
         player = game.find_player(player_token)
         curr_state = game.state
 
-        if game.turn == player:
+        if game.turn == player and game.turn.token[0].isupper():
             _ = game.step(inp)
         return True
 
