@@ -14,11 +14,9 @@ class Player:
 
     def deactivate(self):
         self.active = False
-        self.act = 0
 
     def activate(self):
         self.active = True
-        self.act = 1
 
     def draw(self, deck):
         self.hand.append(deck.main_pile.pop())
