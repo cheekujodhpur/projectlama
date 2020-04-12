@@ -126,7 +126,7 @@ class NetworkGame(Game):
 
             #Logging the top card when the round starts
             log_info.write(f"nR\n\n")
-            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n") 
+            log_info.write(f"tC\n{str(self.deck.discard_pile[-1])}\n\n") 
             self.package_send2 = {}
             
             # first draw
