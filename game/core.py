@@ -1,7 +1,7 @@
 from .constants import State, Prompt, GameErrors
 from .deck import Deck
 from .players import Player, NetworkPlayer
-from .utils import prompter
+from .utils import prompter, plus_one
 from collections import defaultdict, deque
 from itertools import cycle
 from twisted.web import http, server, xmlrpc
@@ -14,7 +14,6 @@ class Game:
     def __init__(self):
         self.history = []
         self.state = None
-
         self.turn_cycler = None
         self.turn = None
 
@@ -61,6 +60,47 @@ class NetworkGame(Game):
         else:
             return {"error": "Game is full"}
 
+    def add_bot(self):
+        if len(self.players) < 6:
+            alias = "Bot" + str(self.num_bots()+1)
+            player_token = ''.join(
+                random.choices(
+                    #Might help to distinguish between players and bots
+                    string.ascii_lowercase +
+                    string.digits,
+                    k=5))
+            new = NetworkPlayer(alias, player_token)
+            new.bot()
+            self.players.append(new)
+            return {"token": player_token}
+        else:
+            return {"error": "Game is full"}
+
+    def bot_score(self, player):
+        score = 0
+        uniq_hand = list(set(player.hand))
+        increment = sum(map(lambda x: x if x < 7 else 10, uniq_hand))
+        score = score + increment
+        return score
+
+    def logic_bot(self, player, discard_pile):
+        if player.active == False:
+            return None
+        for card in player.hand:
+            if card ==  discard_pile[-1] or card == plus_one(discard_pile[-1]):
+                return card
+        score = self.bot_score(player)
+        if score < 15:
+            return "Fold"
+        return "Draw"
+
+    def num_bots(self):
+        num = 0
+        for temp in self.players:
+            if temp.isbot:
+                num+=1
+        return num
+
     def find_player(self, player_token):
         # validate guarantees you will find one
         for player in self.players:
@@ -86,7 +126,7 @@ class NetworkGame(Game):
 
             #Logging the top card when the round starts
             log_info.write(f"nR\n\n")
-            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n") 
+            log_info.write(f"tC\n{str(self.deck.discard_pile[-1])}\n\n") 
             self.package_send2 = {}
             
             # first draw
@@ -102,8 +142,12 @@ class NetworkGame(Game):
             if info is not None and info.isdigit():
                 info = int(info)
 
-            if not sum(map(lambda x: x.active, self.players)):
-                return None, State.ROUND_END
+            n = 0
+            for temp in self.players:
+                if temp.active:
+                    n+=1
+            if n==0:
+               return None, State.ROUND_END
 
             player = self.turn 
             deck = self.deck
@@ -201,7 +245,7 @@ class NetworkGame(Game):
 
     def step(self, info):
         if self.state is not State.GAME_END:
-            prompt, new_state = self.evaluate(self.state, info)
+            prompt, new_state = self.evaluate(self.state, str(info))
             print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
             return self.get_info(prompt)
@@ -254,6 +298,11 @@ class GameMaster(xmlrpc.XMLRPC):
         return self.games[game_id].add_player(alias)
 
     @xmlrpc.withRequest
+    def xmlrpc_add(self, request, game_id):
+        GameMaster.__apply_CORS_headers(request)
+        return self.games[game_id].add_bot()
+
+    @xmlrpc.withRequest
     def xmlrpc_query_state(self, request, game_id, player_token):
         GameMaster.__apply_CORS_headers(request)
         result = {}
@@ -268,6 +317,7 @@ class GameMaster(xmlrpc.XMLRPC):
         player = game.find_player(player_token)
         curr_state = game.state
 
+
         if not len(game.input_wait_queue):
             _ = game.step(None)
 
@@ -278,14 +328,19 @@ class GameMaster(xmlrpc.XMLRPC):
             result["players"] = list(map(lambda x: x.alias, game.players))
 
         if curr_state is State.ROUND_CONT:
+
+           
             result["game_state"] = "round_running"
             result["whose_turn"] = game.turn.alias
             result["hand"] = player.hand
             result["top_card"], result["top_card_v"] = game.deck.top_card()
+
+                
             if game.turn == player:
                 result["my_turn"] = "yes"
                 if len(game.input_wait_queue):
                     result["expected_action"] = game.input_wait_queue.pop()
+                    
 
         if len(game.error_queue):
             result["error"] = game.error_queue.pop() 
@@ -298,6 +353,10 @@ class GameMaster(xmlrpc.XMLRPC):
         while len(special_msg_for_player):
             result["score"].append(special_msg_for_player.pop())
 
+        if game.turn is not None:
+            if game.turn.isbot:
+                    _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
+        
         return result
 
     @xmlrpc.withRequest
@@ -313,7 +372,7 @@ class GameMaster(xmlrpc.XMLRPC):
         player = game.find_player(player_token)
         curr_state = game.state
 
-        if game.turn == player:
+        if game.turn == player and game.turn.token[0].isupper():
             _ = game.step(inp)
         return True
 

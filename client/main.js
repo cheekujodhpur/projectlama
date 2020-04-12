@@ -1,3 +1,4 @@
+
 const cookie_list = [ "alias", "gameid", "playertoken", "started" ];
 
 function setCookie(key, value, expiry) {
@@ -60,6 +61,11 @@ $(document).ready(function(){
     $("#l-create-button").click(function() {
         createGame(); 
     });
+
+    $("#l-add-bot-button").click(function() {
+        addBot();
+    });
+
 
     $("#l-start-game-button").click(function() {
         startGame();

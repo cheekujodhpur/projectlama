@@ -6,6 +6,7 @@ class Player:
         self.auto = auto
         self.hand = []
         self.active = True
+        self.isbot = False
         self.score = 0
 
     def init(self):
@@ -17,6 +18,9 @@ class Player:
 
     def activate(self):
         self.active = True
+
+    def bot(self):
+        self.isbot = True
 
     def draw(self, deck):
         self.hand.append(deck.main_pile.pop())
