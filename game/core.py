@@ -135,8 +135,12 @@ class NetworkGame(Game):
             if info is not None and info.isdigit():
                 info = int(info)
 
-            if not sum(map(lambda x: x.active, self.players)):
-                return None, State.ROUND_END
+            n = 0
+            for temp in self.players:
+                if temp.active:
+                    n+=1
+            if n==0:
+               return None, State.ROUND_END
 
             player = self.turn 
             deck = self.deck
