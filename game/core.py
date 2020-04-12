@@ -324,8 +324,6 @@ class GameMaster(xmlrpc.XMLRPC):
             result["hand"] = player.hand
             result["top_card"], result["top_card_v"] = game.deck.top_card()
 
-            if game.turn.token[0].islower():
-                _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
                 
             if game.turn == player:
                 result["my_turn"] = "yes"
@@ -344,6 +342,10 @@ class GameMaster(xmlrpc.XMLRPC):
         while len(special_msg_for_player):
             result["score"].append(special_msg_for_player.pop())
 
+        if game.turn is not None:
+            if game.turn.token[0].islower():
+                    _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
+        
         return result
 
     @xmlrpc.withRequest
