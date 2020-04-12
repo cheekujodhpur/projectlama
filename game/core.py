@@ -36,7 +36,6 @@ class NetworkGame(Game):
     def __init__(self, game_id):
         self.game_id = game_id
         self.players = []
-        self.num_bots = 0
         self.error_queue = deque()
         self.input_wait_queue = deque()
         self.global_message_queue = defaultdict(deque)
@@ -63,15 +62,16 @@ class NetworkGame(Game):
 
     def add_bot(self):
         if len(self.players) < 6:
-            self.num_bots+=1
-            alias = "Bot" + str(self.num_bots)
+            alias = "Bot" + str(self.num_bots()+1)
             player_token = ''.join(
                 random.choices(
                     #Might help to distinguish between players and bots
                     string.ascii_lowercase +
                     string.digits,
                     k=5))
-            self.players.append(NetworkPlayer(alias, player_token))
+            new = NetworkPlayer(alias, player_token)
+            new.bot()
+            self.players.append(new)
             return {"token": player_token}
         else:
             return {"error": "Game is full"}
@@ -93,6 +93,13 @@ class NetworkGame(Game):
         if score < 15:
             return "Fold"
         return "Draw"
+
+    def num_bots(self):
+        num = 0
+        for temp in self.players:
+            if temp.isbot:
+                num+=1
+        return num
 
     def find_player(self, player_token):
         # validate guarantees you will find one
@@ -347,7 +354,7 @@ class GameMaster(xmlrpc.XMLRPC):
             result["score"].append(special_msg_for_player.pop())
 
         if game.turn is not None:
-            if game.turn.token[0].islower():
+            if game.turn.isbot:
                     _ = game.step(game.logic_bot(game.turn, game.deck.discard_pile))
         
         return result
