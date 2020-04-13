@@ -74,6 +74,13 @@ class NetworkGame(Game):
         else:
             return {"error": "Game is full. Can't add AI player"}
 
+    def join_AI_player(self, player): #Takes input an object of NetworkPlayer to add to the game. Useful in adding already established AI's to a new game.
+    	if len(self.players) < 6:
+            self.players.append(player)
+            return {"token": player_token, "alias": player_token}
+        else:
+            return {"error": "Game is full. Can't add AI player"}
+
     def moveAI(self, player):
         def draw_or_fold():
             if len(set(player.hand)) < 3 or player.score < 11:
