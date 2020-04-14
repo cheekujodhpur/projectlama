@@ -14,11 +14,14 @@ class Game:
     def __init__(self):
         self.history = []
         self.state = None
+        self.num_games = 0
+        self.tot_games = 0
+        self.bot_no = 0
         self.turn_cycler = None
         self.turn = None
 
     def init(self):
-        self.state = State.GAME_BEGIN
+        self.state = State.TEST_BEGIN
 
     def advance_turn(self):
         self.turn = next(self.turn_cycler)
@@ -44,7 +47,13 @@ class NetworkGame(Game):
 
     def init(self):
         super().init()
-        self.input_wait_queue.pop()
+        self.tot_games = prompter(f"How many Games?", [])
+        self.bot_no = int(prompter(f"How many bots?", []))
+        for i in range(self.bot_no):
+            self.add_bot()
+        
+        if len(self.input_wait_queue):
+            self.input_wait_queue.pop()
         self.turn_cycler = cycle(self.players)
         self.turn = next(self.turn_cycler)
 
@@ -115,8 +124,14 @@ class NetworkGame(Game):
 
     def evaluate(self, state, info):
         log_info = open("logs.txt", "a")
+        
+        if state is State.TEST_BEGIN:
+            log_info.write(f"nT\n{str(datetime.now())}\n\n")
+            return None, State.GAME_BEGIN
+
         if state is State.GAME_BEGIN:
-            log_info.write(f"nG\n{str(datetime.now())}\n\n")
+            self.num_games+=1
+            log_info.write(f"nG {str(self.num_games)}\n\n")
             return None, State.ROUND_BEGIN
 
         elif state is State.ROUND_BEGIN:
@@ -165,7 +180,7 @@ class NetworkGame(Game):
                             for x in player.hand:
                                 log_info.write(f"{str(x)} ")
                             log_info.write(f"\nf\n\n")
-                            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n")
+                            log_info.write(f"tC\n{str(self.deck.discard_pile[-1])}\n\n")
                             log_info.close()
                             
                         elif info == "Draw":
@@ -175,7 +190,7 @@ class NetworkGame(Game):
                             player.draw(self.deck)
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has drawn")
                             log_info.write(f"\nd\n\n")
-                            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n")                           
+                            log_info.write(f"tC\n{str(self.deck.discard_pile[-1])}\n\n")                           
                             log_info.close()                        
                         else:
                             return Prompt.FD, State.ROUND_CONT
@@ -190,7 +205,7 @@ class NetworkGame(Game):
                             for x in player.hand:
                                 log_info.write(f"{str(x)} ")
                             log_info.write(f"\nf")
-                            log_info.write(f"tC\n{str(self.deck.discard_pile[0])}\n\n")
+                            log_info.write(f"tC\n{str(self.deck.discard_pile[-1])}\n\n")
                             log_info.close()
                         elif deck.playable(info) and info in player.hand:
                             log_info.write(f"pT\n{player.alias}\n")                            
@@ -205,7 +220,7 @@ class NetworkGame(Game):
                                 log_info.write(f"\nhF\n\n")
                                 return None, State.ROUND_END
                             else:
-                                log_info.write(f"\ntC\n{str(self.deck.discard_pile[0])}\n\n")
+                                log_info.write(f"\ntC\n{str(self.deck.discard_pile[-1])}\n\n")
                             log_info.close()
                         else:
                             return Prompt.PF, State.ROUND_CONT
@@ -233,6 +248,14 @@ class NetworkGame(Game):
                 log_info.close()
                 return None, State.ROUND_BEGIN
 
+        elif state is State.GAME_END:
+            if int(self.num_games) < int(self.tot_games):
+                return None, State.GAME_BEGIN
+            else:
+                log_info.write(f"tE\n")
+                log_info.close()
+                return None, State.TEST_END
+
     def get_info(self, prompt):
         if prompt is None:
             return None
@@ -243,12 +266,53 @@ class NetworkGame(Game):
             self.input_wait_queue.append("PF")
             return None
 
-    def step(self, info):
-        if self.state is not State.GAME_END:
+    def step(self, info = None):
+        if self.state is not State.TEST_END:
             prompt, new_state = self.evaluate(self.state, str(info))
             print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
-            return self.get_info(prompt)
+            return None
+
+class TestMaster(NetworkGame):
+    def __init__(self):
+        super().__init__(str(1))
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exception_type, exception_value, traceback):
+        pass
+
+    def init(self):
+        super().init()
+        #State moves from TEST_BEGIN to GAME_BEGIN
+        self.step()
+        
+
+    def run(self):
+        while self.state is not State.TEST_END:
+
+            if self.state is State.GAME_BEGIN or self.state is State.ROUND_BEGIN:
+                self.step(None)
+
+            if self.state is State.ROUND_CONT:
+                move = self.logic_bot(self.turn, self.deck.discard_pile)
+                if move is not None:
+                    self.step(move)
+                self.advance_turn()
+
+            if self.state is State.ROUND_END:
+                self.step(None)
+
+            if self.state is State.GAME_END:
+                for player in self.players:
+                    player.score = 0
+                self.step(None)
+
+
+
+
+
 
 class GameMaster(xmlrpc.XMLRPC):
     def __init__(self):
