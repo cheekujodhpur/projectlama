@@ -269,7 +269,7 @@ class NetworkGame(Game):
     def step(self, info = None):
         if self.state is not State.TEST_END:
             prompt, new_state = self.evaluate(self.state, str(info))
-            print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
+            #print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
             return None
 
@@ -309,6 +309,7 @@ class TestMaster(NetworkGame):
                     player.score = 0
                 self.step(None)
 
+        print(f"Testing Completed. Check logfile for history.")
 
 
 
