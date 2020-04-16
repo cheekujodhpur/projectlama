@@ -8,7 +8,6 @@ from twisted.web import http, server, xmlrpc
 import random
 import string
 
-
 class Game:
     def __init__(self):
         self.history = []
@@ -72,7 +71,14 @@ class NetworkGame(Game):
             self.players.append(NetworkPlayer(player_token, player_token, auto=True))
             return {"token": player_token, "alias": player_token}
         else:
-            return {"error": "Game is full. Can't add AI player"}
+        	return {"error": "Game is full. Can't add AI player"}
+
+    def join_AI_player(self, player): #Takes input an object of NetworkPlayer to add to the game. Useful in adding already established AI's to a new game.
+        if len(self.players) < 6:
+        	self.players.append(player)
+        	return {"token": player_token, "alias": player_token}
+        else:
+        	return {"error": "Game is full. Can't add AI player"}
 
     def moveAI(self, player):
         def draw_or_fold():
@@ -153,13 +159,21 @@ class NetworkGame(Game):
                             return Prompt.FD, State.ROUND_CONT
                 else:
                     if info is None:
-                        return Prompt.PF, State.ROUND_CONT
+                    	active_players = sum(map(lambda x: x.active, self.players))
+                    	if not len(deck.main_pile) or active_players is 1:
+                    		return Prompt.PF, State.ROUND_CONT
+                    	return Prompt.PFD, State.ROUND_CONT
                     else:
                         if info == "Fold":
                             player.deactivate()
                             self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has folded")
                             curr_hand = ''.join([str(i) for i in player.hand])
                             self.log_file.write(f"{self.round_no},M,{player.token},{0},{self.deck.discard_pile[-1]},{curr_hand}\n")
+                        elif info == "Draw":
+                            player.draw(self.deck)
+                            curr_hand = ''.join([str(i) for i in player.hand])
+                            self._broadcast_message(f"<span class='l-player-name'>{player.alias}</span> has drawn")
+                            self.log_file.write(f"{self.round_no},M,{player.token},{-1},{self.deck.discard_pile[-1]},{curr_hand}\n")
                         elif deck.playable(info) and info in player.hand:
                             tbd = player.delete(info)
                             deck.discard(tbd)
@@ -200,6 +214,9 @@ class NetworkGame(Game):
         elif prompt is Prompt.PF:
             self.input_wait_queue.append("PF")
             return None
+        elif prompt is Prompt.PFD:
+        	self.input_wait_queue.append("PFD")
+        	return None
 
     def step(self, info):
         if self.state is not State.GAME_END:

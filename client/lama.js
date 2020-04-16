@@ -24,6 +24,8 @@ function myTurnHandler(data) {
         msg += "play or fold.";
     else if (data.expected_action == "FD")
         msg += "draw or fold.";
+    else if (data.expected_action == "PFD")
+        msg += "play, draw or fold.";
     else
         msg += "<exterminate>";
 
