@@ -1,10 +1,12 @@
 from enum import Enum
 class State(Enum):
+    TEST_BEGIN = -1 #The testing begins
     GAME_BEGIN = 0 # We do not know the number or type of players
     ROUND_BEGIN = 1 # Round begins
     ROUND_CONT = 2 # It is some player's turn
     ROUND_END = 3 # Round ends
     GAME_END = 4 # Game ends
+    TEST_END = 5 #Testing ends
 
 class Prompt(Enum):
     NUM_PLAYERS = 0 # number of players
