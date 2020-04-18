@@ -14,6 +14,7 @@ class Game:
     def __init__(self):
         self.history = []
         self.state = None
+        self.test = False
         self.num_games = 0
         self.tot_games = 0
         self.bot_no = 0
@@ -21,7 +22,10 @@ class Game:
         self.turn = None
 
     def init(self):
-        self.state = State.TEST_BEGIN
+        if self.test:
+            self.state = State.TEST_BEGIN
+        else:
+            self.state = State.GAME_BEGIN
 
     def advance_turn(self):
         self.turn = next(self.turn_cycler)
@@ -47,13 +51,17 @@ class NetworkGame(Game):
 
     def init(self):
         super().init()
-        self.tot_games = prompter(f"How many Games?", [])
-        self.bot_no = int(prompter(f"How many bots?", []))
-        for i in range(self.bot_no):
-            self.add_bot()
-        
-        if len(self.input_wait_queue):
+        if self.test:    
+            self.tot_games = prompter(f"How many Games?", [])
+            self.bot_no = int(prompter(f"How many bots?", []))
+            for i in range(self.bot_no):
+                self.add_bot()
+            
+            if len(self.input_wait_queue):
+                self.input_wait_queue.pop()
+        else:
             self.input_wait_queue.pop()
+
         self.turn_cycler = cycle(self.players)
         self.turn = next(self.turn_cycler)
 
@@ -130,8 +138,12 @@ class NetworkGame(Game):
             return None, State.GAME_BEGIN
 
         if state is State.GAME_BEGIN:
-            self.num_games+=1
-            log_info.write(f"nG {str(self.num_games)}\n\n")
+            if self.test:
+                self.num_games+=1
+                log_info.write(f"nG {str(self.num_games)}\n\n")
+            else:
+                log_info.write(f"nG {str(datetime.now())}\n\n")
+
             return None, State.ROUND_BEGIN
 
         elif state is State.ROUND_BEGIN:
@@ -248,7 +260,7 @@ class NetworkGame(Game):
                 log_info.close()
                 return None, State.ROUND_BEGIN
 
-        elif state is State.GAME_END:
+        elif state is State.GAME_END and self.test:
             if int(self.num_games) < int(self.tot_games):
                 return None, State.GAME_BEGIN
             else:
@@ -266,27 +278,34 @@ class NetworkGame(Game):
             self.input_wait_queue.append("PF")
             return None
 
-    def step(self, info = None):
-        if self.state is not State.TEST_END:
+    def step(self, info):
+        if (self.test) and (self.state is not State.TEST_END):
             prompt, new_state = self.evaluate(self.state, str(info))
             #print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
             self.state = new_state
             return None
 
-class TestMaster(NetworkGame):
-    def __init__(self):
-        super().__init__(str(1))
+        elif (not self.test) and (self.state is not State.GAME_END):
+             prompt, new_state = self.evaluate(self.state, str(info))
+             print(f"{self.game_id} stepping from {str(self.state)} to {str(new_state)}")
+             self.state = new_state
+             return self.get_info(prompt)
 
+class TestMaster(NetworkGame):
     def __enter__(self):
         return self
 
     def __exit__(self, exception_type, exception_value, traceback):
         pass
 
+    def __init__(self):
+        super().__init__(str(1))
+        self.test = True
+
     def init(self):
         super().init()
         #State moves from TEST_BEGIN to GAME_BEGIN
-        self.step()
+        self.step(None)
         
 
     def run(self):
