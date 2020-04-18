@@ -5,8 +5,8 @@ Leg Alle Minpunten Af
 
 ```python
 pip install -r requirements_dev.txt
-# For testing and gameplay
-python lama.py
+# For testing of bots
+python test-arena.py
 # For future
 python lama-server.py # in one terminal
 python lama-client.py # in another and more
