@@ -54,6 +54,7 @@ class NetworkGame(Game):
         if self.test:    
             self.tot_games = prompter(f"How many Games?", [])
             self.bot_no = int(prompter(f"How many bots?", []))
+            self.add_bot(True)
             for i in range(self.bot_no):
                 self.add_bot()
             
@@ -77,17 +78,20 @@ class NetworkGame(Game):
         else:
             return {"error": "Game is full"}
 
-    def add_bot(self):
+    def add_bot(self, Q = False):
         if len(self.players) < 6:
-            alias = "Bot" + str(self.num_bots()+1)
+            if not Q:
+                alias = "Bot" + str(self.num_bots()+1)
+            else:
+                alias = "Q-Agent"
             player_token = ''.join(
                 random.choices(
                     #Might help to distinguish between players and bots
                     string.ascii_lowercase +
                     string.digits,
                     k=5))
-            new = NetworkPlayer(alias, player_token)
-            new.bot()
+            new = NetworkPlayer(alias, player_token, Q)
+            new.bot(Q)
             self.players.append(new)
             return {"token": player_token}
         else:
@@ -315,7 +319,10 @@ class TestMaster(NetworkGame):
                 self.step(None)
 
             if self.state is State.ROUND_CONT:
-                move = self.logic_bot(self.turn, self.deck.discard_pile)
+                if not self.turn.isQbot:
+                    move = self.logic_bot(self.turn, self.deck.discard_pile)
+                else:
+                    move = self.turn.Q_Bot_AI(self.deck)
                 if move is not None:
                     self.step(move)
                 self.advance_turn()
