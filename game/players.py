@@ -1,4 +1,4 @@
-from .utils import prompter
+from .utils import plus_one
 import numpy
 
 class node:
@@ -17,9 +17,8 @@ class Player:
         self.isbot = False
         self.isQbot = Q
         self.score = 0
-        if Q:
+        if self.isQbot:
             #New parameters added from here
-            self.isQbot = False
             self.Q_HASH_TABLE = numpy.empty( 8889, dtype=object )
             self.ALPHA = 0.2
             self.COMPL_REWARD = 10.0
@@ -37,8 +36,9 @@ class Player:
     def activate(self):
         self.active = True
 
-    def bot(self):
+    def bot(self, Q):
         self.isbot = True
+        self.isQbot = Q
 
     def draw(self, deck):
         self.hand.append(deck.main_pile.pop())
@@ -93,33 +93,35 @@ class Player:
         return score
 
     def Q_Bot_AI(self, deck):
-        index_act = self.encode(deck)
-        index_arr = int(index_act/10000)
-        index_list = int(index_act%10000)
-
-        if self.Q_HASH_TABLE[index_arr] is None:
-            new = node(index_list)
-            self.Q_HASH_TABLE[index_arr] = [new]
-
+        if self.active == False:
+            return None
         else:
-            for node in Q_HASH_TABLE[index_arr]:
-                if node.index_list == index_list:
+            index_act = self.encode(deck)
+            index_arr = int(index_act/10000)
+            index_list = int(index_act%10000)
+
+            if self.Q_HASH_TABLE[index_arr] is None:
+                new = node(index_list)
+                self.Q_HASH_TABLE[index_arr] = [new]
+
+            
+            for nodes in self.Q_HASH_TABLE[index_arr]:
+                if nodes.index_list == index_list:
                     ###This Part contains the action and the updating of Q_VALUES###
-                    if node.Q_VALUES[0] < node.Q_VALUES[1]:
+                    if nodes.Q_VALUES[0] < nodes.Q_VALUES[1]:
                         if not self.playable(deck):
-                            node.Q_VALUES[0] = (1-self.ALPHA)*(node.Q_VALUES[0]) + (self.ALPHA)*(self.DRAW_PENALTY)
+                            nodes.Q_VALUES[0] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*(self.DRAW_PENALTY)
                             return "Draw"
                         else:
                             for card in self.hand:
                                 if card ==  deck.discard_pile[-1] or card == plus_one(deck.discard_pile[-1]):
                                     self.PLAY_REWARD = card * (0.1)
-                                    node.Q_VALUES[0] = (1-self.ALPHA)*(node.Q_VALUES[0]) + (self.ALPHA)*(self.PLAY_REWARD)
+                                    nodes.Q_VALUES[0] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*(self.PLAY_REWARD)
                                     return card
-
                     else:
                         temp_score = self.bot_score(self.hand)
                         self.FOLD_PENALTY = (-1*temp_score)/10
-                        node.Q_VALUES[1] = (1-self.ALPHA)*(node.Q_VALUES[1]) + (self.ALPHA)*(self.FOLD_PENALTY)
+                        nodes.Q_VALUES[1] = (1-self.ALPHA)*(nodes.Q_VALUES[1]) + (self.ALPHA)*(self.FOLD_PENALTY)
                         return "Fold"
 
             #If the index hasn't been called yet
