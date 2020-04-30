@@ -21,6 +21,10 @@ class Player:
             #New parameters added from here
             self.Q_HASH_TABLE = numpy.empty( 8889, dtype=object )
             self.ALPHA = 0.2
+            self.DISCOUNT_FACTOR = 0.8
+            #The state can never be 0, so it's okay to initialise as such
+            self.PREV_STATE = 0
+            self.CURR_STATE = 0
             self.COMPL_REWARD = 10.0
             #self.PLAY_REWARD defined later
             self.DRAW_PENALTY = (-0.5)
@@ -92,6 +96,18 @@ class Player:
         score = score + increment
         return score
 
+    def Q_max(self, index_act):
+        index_arr = int(index_act/10000)
+        index_list = int(index_act%10000)
+
+        for nodes in self.Q_HASH_TABLE[index_arr]:
+            if nodes.index_list == index_list:
+                if nodes.Q_VALUES[0] > nodes.Q_VALUES[1]:
+                    return nodes.Q_VALUES[0]
+                else:
+                    return nodes.Q_VALUES[1]
+
+
     def Q_Bot_AI(self, deck):
         if self.active == False:
             return None
@@ -99,6 +115,10 @@ class Player:
             index_act = self.encode(deck)
             index_arr = int(index_act/10000)
             index_list = int(index_act%10000)
+
+            if self.PREV_STATE == 0:
+                self.PREV_STATE = index_act
+            self.CURR_STATE = index_act
 
             if self.Q_HASH_TABLE[index_arr] is None:
                 new = node(index_list)
@@ -110,18 +130,21 @@ class Player:
                     ###This Part contains the action and the updating of Q_VALUES###
                     if nodes.Q_VALUES[0] < nodes.Q_VALUES[1]:
                         if not self.playable(deck):
-                            nodes.Q_VALUES[0] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*(self.DRAW_PENALTY)
+                            nodes.Q_VALUES[0] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*((self.DRAW_PENALTY) + self.DISCOUNT_FACTOR*(self.Q_max(self.PREV_STATE)))
+                            self.PREV_STATE = self.CURR_STATE
                             return "Draw"
                         else:
                             for card in self.hand:
                                 if card ==  deck.discard_pile[-1] or card == plus_one(deck.discard_pile[-1]):
                                     self.PLAY_REWARD = card * (0.1)
-                                    nodes.Q_VALUES[0] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*(self.PLAY_REWARD)
+                                    nodes.Q_VALUES[0] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*((self.PLAY_REWARD) + self.DISCOUNT_FACTOR*(self.Q_max(self.PREV_STATE)))
+                                    self.PREV_STATE = self.CURR_STATE
                                     return card
                     else:
                         temp_score = self.bot_score(self.hand)
                         self.FOLD_PENALTY = (-1*temp_score)/10
-                        nodes.Q_VALUES[1] = (1-self.ALPHA)*(nodes.Q_VALUES[1]) + (self.ALPHA)*(self.FOLD_PENALTY)
+                        nodes.Q_VALUES[1] = (1-self.ALPHA)*(nodes.Q_VALUES[1]) + (self.ALPHA)*((self.FOLD_PENALTY) + self.DISCOUNT_FACTOR*(self.Q_max(self.PREV_STATE)))
+                        self.PREV_STATE = self.CURR_STATE
                         return "Fold"
 
             #If the index hasn't been called yet
