@@ -334,11 +334,16 @@ class TestMaster(NetworkGame):
                     move = self.logic_bot(self.turn, self.deck.discard_pile)
                 else:
                     move = self.turn.Q_Bot_AI(self.deck)
+
                 if move is not None:
                     self.step(move)
                 self.advance_turn()
 
             if self.state is State.ROUND_END:
+                for player in self.players:
+                    if player.isQbot:
+                        player.PREV_STATE = 0
+                        player.CURR_STATE = 0
                 self.step(None)
 
             if self.state is State.GAME_END:
