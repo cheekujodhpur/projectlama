@@ -57,7 +57,7 @@ class NetworkGame(Game):
             self.add_bot(True)
             for i in range(self.bot_no):
                 self.add_bot()
-            
+
             if len(self.input_wait_queue):
                 self.input_wait_queue.pop()
         else:
@@ -138,6 +138,7 @@ class NetworkGame(Game):
         log_info = open("logs.txt", "a")
         
         if state is State.TEST_BEGIN:
+
             log_info.write(f"nT\n{str(datetime.now())}\n\n")
             return None, State.GAME_BEGIN
 
@@ -195,7 +196,7 @@ class NetworkGame(Game):
                             log_info.write(f"pT\n{player.alias}\n")
                             for x in player.hand:
                                 log_info.write(f"{str(x)} ")
-                            log_info.write(f"\nf\n\n")
+                            log_info.write(f"\nf\n \n")
                             log_info.write(f"tC\n{str(self.deck.discard_pile[-1])}\n\n")
                             log_info.close()
                             
@@ -241,7 +242,8 @@ class NetworkGame(Game):
                         else:
                             return Prompt.PF, State.ROUND_CONT
 
-            self.advance_turn()
+            if not self.test:
+                self.advance_turn()
             return None, State.ROUND_CONT
 
         elif state is State.ROUND_END:
@@ -266,6 +268,7 @@ class NetworkGame(Game):
 
         elif state is State.GAME_END and self.test:
             if int(self.num_games) < int(self.tot_games):
+                print(self.num_games)
                 return None, State.GAME_BEGIN
             else:
                 log_info.write(f"tE\n")
@@ -319,6 +322,14 @@ class TestMaster(NetworkGame):
                 self.step(None)
 
             if self.state is State.ROUND_CONT:
+
+                n = 0
+                for temp in self.players:
+                    if temp.active:
+                        n+=1
+                if n==0:
+                    self.state = State.ROUND_END
+                
                 if not self.turn.isQbot:
                     move = self.logic_bot(self.turn, self.deck.discard_pile)
                 else:
