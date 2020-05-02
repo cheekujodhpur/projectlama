@@ -117,45 +117,46 @@ class Player:
             if self.PREV_STATE == 0:
                 self.PREV_STATE = index_act
             self.CURR_STATE = index_act
+            print(self.PREV_STATE, self.CURR_STATE)
 
             if self.Q_HASH_TABLE[index_arr] is None:
                 new = node(index_list)
                 self.Q_HASH_TABLE[index_arr] = [new]
+                nodes = new
 
+            elif self.Q_node(index_act) is False:
+                new = node(index_list)
+                self.Q_HASH_TABLE[index_arr].append(new)
+                nodes = new
+
+            else:
+                nodes = self.Q_node(index_act)
             
-            for nodes in self.Q_HASH_TABLE[index_arr]:
-                if nodes.index_list == index_list:
-                    ###This Part contains the action and the updating of Q_VALUES###
-                    if nodes.Q_VALUES[0] > nodes.Q_VALUES[1]:
-                        if not self.playable(deck):
+            ###This Part contains the action and the updating of Q_VALUES###
+            if nodes.Q_VALUES[0] > nodes.Q_VALUES[1]:
+                if not self.playable(deck):
+                    if self.PREV_STATE != self.CURR_STATE:
+                        self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*((self.DRAW_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
+                    self.PREV_STATE = self.CURR_STATE
+                    self.PREV_ACT = 0
+                    return "Draw"
+                else:
+                    for card in self.hand:
+                        if card ==  deck.discard_pile[-1] or card == plus_one(deck.discard_pile[-1]):
                             if self.PREV_STATE != self.CURR_STATE:
-                                self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*((self.DRAW_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
+                                self.PLAY_REWARD = card * (0.1)
+                                self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*((self.PLAY_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
                             self.PREV_STATE = self.CURR_STATE
                             self.PREV_ACT = 0
-                            return "Draw"
-                        else:
-                            for card in self.hand:
-                                if card ==  deck.discard_pile[-1] or card == plus_one(deck.discard_pile[-1]):
-                                    if self.PREV_STATE != self.CURR_STATE:
-                                        self.PLAY_REWARD = card * (0.1)
-                                        self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(nodes.Q_VALUES[0]) + (self.ALPHA)*((self.PLAY_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
-                                    self.PREV_STATE = self.CURR_STATE
-                                    self.PREV_ACT = 0
-                                    return card
-                    else:
-                        temp_score = self.bot_score(self.hand)
-                        if self.PREV_STATE != self.CURR_STATE:
-                            self.FOLD_PENALTY = (-1*temp_score)/10
-                            self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(nodes.Q_VALUES[1]) + (self.ALPHA)*((self.FOLD_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[1]))
-                        self.PREV_STATE = self.CURR_STATE
-                        self.PREV_ACT = 1
-                        return "Fold"
-
-            #If the index hasn't been called yet
-            new = node(index_list)
-            self.Q_HASH_TABLE[index_arr].append(new)
-            return self.Q_Bot_AI(deck)
-
+                            return card
+            else:
+                temp_score = self.bot_score(self.hand)
+                if self.PREV_STATE != self.CURR_STATE:
+                    self.FOLD_PENALTY = (-1*temp_score)/10
+                    self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(nodes.Q_VALUES[1]) + (self.ALPHA)*((self.FOLD_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[1]))
+                self.PREV_STATE = self.CURR_STATE
+                self.PREV_ACT = 1
+                return "Fold"
 
 
 class NetworkPlayer(Player):
