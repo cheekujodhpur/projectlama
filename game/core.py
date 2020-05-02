@@ -6,8 +6,10 @@ from collections import defaultdict, deque
 from itertools import cycle
 from twisted.web import http, server, xmlrpc
 from datetime import datetime
+import matplotlib.pyplot as plt
 import random
 import string
+import pickle
 
 
 class Game:
@@ -15,6 +17,7 @@ class Game:
         self.history = []
         self.state = None
         self.test = False
+        self.ROUND_NO = 0
         self.num_games = 0
         self.tot_games = 0
         self.bot_no = 0
@@ -42,6 +45,11 @@ class Game:
 class NetworkGame(Game):
     def __init__(self, game_id):
         self.game_id = game_id
+        self.CUM_REW = 0
+        self.CUM_PEN = 0
+        self.x1 = []
+        self.y1 = []
+        self.y2 = []
         self.players = []
         self.error_queue = deque()
         self.input_wait_queue = deque()
@@ -152,6 +160,7 @@ class NetworkGame(Game):
             return None, State.ROUND_BEGIN
 
         elif state is State.ROUND_BEGIN:
+            self.ROUND_NO+=1
             # deck
             self.deck = Deck()
             self.deck.start()
@@ -268,7 +277,7 @@ class NetworkGame(Game):
 
         elif state is State.GAME_END and self.test:
             if int(self.num_games) < int(self.tot_games):
-                print(self.num_games)
+                print(f"GN {self.num_games}")
                 return None, State.GAME_BEGIN
             else:
                 log_info.write(f"tE\n")
@@ -342,16 +351,42 @@ class TestMaster(NetworkGame):
             if self.state is State.ROUND_END:
                 for player in self.players:
                     if player.isQbot:
+                        player.PREV_REWARD = 0
                         player.PREV_STATE = 0
                         player.CURR_STATE = 0
                 self.step(None)
 
             if self.state is State.GAME_END:
                 for player in self.players:
+                    if player.isQbot:
+                        self.CUM_REW+=player.R_Rew()
+                        self.CUM_PEN+=player.R_Pen()
+                        if (self.num_games%100) == 0:
+                            self.x1.append(self.num_games)
+                            self.y1.append((self.CUM_REW)/100)
+                            self.y2.append((self.CUM_PEN)/100)
+                            self.CUM_REW = 0
+                            self.CUM_PEN = 0
+                        player.ROUND_REW = 0
+                        player.ROUND_PEN = 0
                     player.score = 0
                 self.step(None)
 
         print(f"Testing Completed. Check logfile for history.")
+
+        for player in self.players:
+            if player.isQbot:
+                arr = player.Q_HASH_TABLE
+                pickle.dump(arr, open("sample.pkl", "ab"))
+
+        plt.plot(self.x1, self.y1, label = "Rewards")
+        plt.plot(self.x1, self.y2, label = "Penalties")
+        plt.xlabel('Game num')
+        plt.ylabel('Penalties/Rewards')
+        plt.title('Graph')
+        plt.legend()
+        plt.show()
+        
 
 
 
