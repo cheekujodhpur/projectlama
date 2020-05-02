@@ -19,12 +19,17 @@ class Player:
         self.score = 0
         if self.isQbot:
             #New parameters added from here
+            self.ROUND_REW = 0
+            self.ROUND_PEN = 0
+
             self.Q_HASH_TABLE = numpy.empty( 8889, dtype=object )
             self.ALPHA = 0.2
             self.DISCOUNT_FACTOR = 0.8
             #The state can never be 0, so it's okay to initialise as such
             self.PREV_STATE = 0
             self.CURR_STATE = 0
+
+            self.PREV_REWARD = 0
             self.COMPL_REWARD = 10.0
             #self.PLAY_REWARD defined later
             self.DRAW_PENALTY = (-0.5)
@@ -70,6 +75,12 @@ class Player:
             i = i + 1
 
     ####### All Changes start from here #########
+
+    def R_Rew(self):
+        return self.ROUND_REW
+
+    def R_Pen(self):
+        return self.ROUND_PEN
 
     def encode(self, deck):
     #Encodes the discard pile only as of now
@@ -117,7 +128,6 @@ class Player:
             if self.PREV_STATE == 0:
                 self.PREV_STATE = index_act
             self.CURR_STATE = index_act
-            print(self.PREV_STATE, self.CURR_STATE)
 
             if self.Q_HASH_TABLE[index_arr] is None:
                 new = node(index_list)
@@ -136,24 +146,39 @@ class Player:
             if nodes.Q_VALUES[0] > nodes.Q_VALUES[1]:
                 if not self.playable(deck):
                     if self.PREV_STATE != self.CURR_STATE:
-                        self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.DRAW_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
+                        self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
+                    self.PREV_REWARD = self.DRAW_PENALTY
+                    self.ROUND_PEN+=self.DRAW_PENALTY
                     self.PREV_STATE = self.CURR_STATE
                     self.PREV_ACT = 0
                     return "Draw"
                 else:
                     for card in self.hand:
                         if card ==  deck.discard_pile[-1] or card == plus_one(deck.discard_pile[-1]):
+                            self.PLAY_REWARD = card * (0.1) 
+                            self.ROUND_REW+=self.PLAY_REWARD
                             if self.PREV_STATE != self.CURR_STATE:
-                                self.PLAY_REWARD = card * (0.1)
-                                self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PLAY_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
+                                self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
+                                if len(self.hand) == 1:
+                                    self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
+                                    self.ROUND_REW+=self.COMPL_REWARD
+                            self.PREV_REWARD = self.PLAY_REWARD
                             self.PREV_STATE = self.CURR_STATE
                             self.PREV_ACT = 0
                             return card
             else:
                 temp_score = self.bot_score(self.hand)
-                if self.PREV_STATE != self.CURR_STATE:
+                if temp_score > 13:
+                    self.FOLD_PENALTY = -5
+                else:
                     self.FOLD_PENALTY = (-1*temp_score)/10
-                    self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.FOLD_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[1]))
+                if self.PREV_STATE != self.CURR_STATE:
+                    #Update Previous State
+                    self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[1]))
+                #Update Current State
+                nodes.Q_VALUES[1] = (1-self.ALPHA)*(nodes.Q_VALUES[1]) + (self.ALPHA)*((self.FOLD_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[1]))
+                self.PREV_REWARD = self.FOLD_PENALTY
+                self.ROUND_PEN+=self.FOLD_PENALTY
                 self.PREV_STATE = self.CURR_STATE
                 self.PREV_ACT = 1
                 return "Fold"
