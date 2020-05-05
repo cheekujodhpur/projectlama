@@ -2,12 +2,12 @@ from .utils import plus_one
 import numpy
 
 class node:
-    def __init__(self, index_list):
+    def __init__(self, index_list, index_act, num_actions = 2):
         self.index_list = index_list
+        self.index_act = index_act
         #First Value corresponds to Play/Draw
-        #As of now, Play refers to playing ANY card in the deck
-        #Second Value corresponds to Fold
-        self.Q_VALUES = numpy.random.rand(2)
+        #Last Value corresponds to Fold
+        self.Q_VALUES = numpy.random.rand(num_actions)
 
 class Player:
     def __init__(self, Q = False, auto=False):
@@ -83,15 +83,23 @@ class Player:
         return self.ROUND_PEN
 
     def encode(self, deck):
-    #Encodes the discard pile only as of now
+    #Encodes the hand of the player
     #Units is tc; the rest are number of cards for 1,2,..
         index = 0
         tc = deck.discard_pile[-1]
         index = index + tc
-        for x in deck.discard_pile:
+        (temp1, temp2) = (False, False)
+        num_actions = 2
+        for x in self.hand:
+            if x == tc:
+                temp1 = True
+            if x == plus_one(tc):
+                temp2 = True
             index = index + int(pow(10, x))
-        index = index - int(pow(10, tc))
-        return index  
+        if temp1 and temp2:
+            num_actions = 3
+        return (index, num_actions)
+
 
     def playable(self, deck):
         for card in self.hand:
@@ -121,29 +129,30 @@ class Player:
         if self.active == False:
             return None
         else:
-            index_act = self.encode(deck)
+            index_act, num_actions = self.encode(deck)
             index_arr = int(index_act/10000)
             index_list = int(index_act%10000)
+
 
             if self.PREV_STATE == 0:
                 self.PREV_STATE = index_act
             self.CURR_STATE = index_act
 
             if self.Q_HASH_TABLE[index_arr] is None:
-                new = node(index_list)
+                new = node(index_list, index_act, num_actions)
                 self.Q_HASH_TABLE[index_arr] = [new]
-                nodes = new
-
-            elif self.Q_node(index_act) is False:
-                new = node(index_list)
-                self.Q_HASH_TABLE[index_arr].append(new)
                 nodes = new
 
             else:
                 nodes = self.Q_node(index_act)
+                if nodes is False:
+                    new = node(index_list, index_act, num_actions)
+                    self.Q_HASH_TABLE[index_arr].append(new)
+                    nodes = new
+
             
             ###This Part contains the action and the updating of Q_VALUES###
-            if nodes.Q_VALUES[0] > nodes.Q_VALUES[1]:
+            if nodes.Q_VALUES[0] > nodes.Q_VALUES[-1] or nodes.Q_VALUES[1] > nodes.Q_VALUES[-1]:
                 if not self.playable(deck):
                     if self.PREV_STATE != self.CURR_STATE:
                         self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
@@ -153,19 +162,39 @@ class Player:
                     self.PREV_ACT = 0
                     return "Draw"
                 else:
-                    for card in self.hand:
-                        if card ==  deck.discard_pile[-1] or card == plus_one(deck.discard_pile[-1]):
-                            self.PLAY_REWARD = card * (0.1) 
-                            self.ROUND_REW+=self.PLAY_REWARD
-                            if self.PREV_STATE != self.CURR_STATE:
-                                self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
-                                if len(self.hand) == 1:
-                                    self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[0]))
-                                    self.ROUND_REW+=self.COMPL_REWARD
-                            self.PREV_REWARD = self.PLAY_REWARD
-                            self.PREV_STATE = self.CURR_STATE
-                            self.PREV_ACT = 0
-                            return card
+                    if num_actions == 2:
+                        for temp in self.hand:
+                            if temp ==  deck.discard_pile[-1] or temp == plus_one(deck.discard_pile[-1]):
+                                card = temp
+                                move = 0
+                    if num_actions == 3:
+                        if nodes.Q_VALUES[0] > nodes.Q_VALUES[1]:
+                            card = deck.discard_pile[-1]
+                            move = 0
+                        else:
+                            card = plus_one(deck.discard_pile[-1])
+                            move = 1
+
+                    rep = 0
+                    for temp in self.hand:
+                        if temp == card:
+                            rep+=1
+
+                    self.PLAY_REWARD = (card - (rep/2)) * (0.1) 
+                    self.ROUND_REW+=self.PLAY_REWARD
+                    if self.PREV_STATE != self.CURR_STATE:
+                        self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE,).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[move]))
+                        if len(self.hand) == 1:
+                            #Give prev the COMPL_REWARD if hand is finished
+                            self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[move]))
+                            #Reward the present state with COMPL_REWARD as well
+                            nodes.Q_VALUES[move] = (1-self.ALPHA)*(nodes.Q_VALUES[move]) + (self.ALPHA)*((self.COMPL_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[move]))
+                            self.ROUND_REW+=self.COMPL_REWARD
+                    self.PREV_REWARD = self.PLAY_REWARD
+                    self.PREV_STATE = self.CURR_STATE
+                    self.PREV_ACT = move
+                    return card
+                    
             else:
                 temp_score = self.bot_score(self.hand)
                 if temp_score > 13:
@@ -174,13 +203,13 @@ class Player:
                     self.FOLD_PENALTY = (-1*temp_score)/10
                 if self.PREV_STATE != self.CURR_STATE:
                     #Update Previous State
-                    self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[1]))
+                    self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT] = (1-self.ALPHA)*(self.Q_node(self.PREV_STATE).Q_VALUES[self.PREV_ACT]) + (self.ALPHA)*((self.PREV_REWARD) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[-1]))
                 #Update Current State
-                nodes.Q_VALUES[1] = (1-self.ALPHA)*(nodes.Q_VALUES[1]) + (self.ALPHA)*((self.FOLD_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[1]))
+                nodes.Q_VALUES[-1] = (1-self.ALPHA)*(nodes.Q_VALUES[-1]) + (self.ALPHA)*((self.FOLD_PENALTY) + self.DISCOUNT_FACTOR*(nodes.Q_VALUES[-1]))
                 self.PREV_REWARD = self.FOLD_PENALTY
                 self.ROUND_PEN+=self.FOLD_PENALTY
                 self.PREV_STATE = self.CURR_STATE
-                self.PREV_ACT = 1
+                self.PREV_ACT = -1
                 return "Fold"
 
 
