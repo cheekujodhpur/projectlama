@@ -338,6 +338,7 @@ class TestMaster(NetworkGame):
                         n+=1
                 if n==0:
                     self.state = State.ROUND_END
+
                 
                 if not self.turn.isQbot:
                     move = self.logic_bot(self.turn, self.deck.discard_pile)
@@ -361,6 +362,8 @@ class TestMaster(NetworkGame):
                     if player.isQbot:
                         self.CUM_REW+=player.R_Rew()
                         self.CUM_PEN+=player.R_Pen()
+                        if (self.num_games%10000) == 0 and player.EPSILON > 0:
+                            player.EPSILON = player.EPSILON - 0.1
                         if (self.num_games%100) == 0:
                             self.x1.append(self.num_games)
                             self.y1.append((self.CUM_REW)/100)
