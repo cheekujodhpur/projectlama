@@ -360,8 +360,8 @@ class TestMaster(NetworkGame):
             if self.state is State.GAME_END:
                 for player in self.players:
                     if player.isQbot:
-                        self.CUM_REW+=player.R_Rew()
-                        self.CUM_PEN+=player.R_Pen()
+                        self.CUM_REW+=player.G_Rew()
+                        self.CUM_PEN+=player.G_Pen()
                         if (self.num_games%10000) == 0 and player.EPSILON > 0:
                             player.EPSILON = player.EPSILON - 0.1
                         if (self.num_games%100) == 0:
@@ -370,8 +370,8 @@ class TestMaster(NetworkGame):
                             self.y2.append((self.CUM_PEN)/100)
                             self.CUM_REW = 0
                             self.CUM_PEN = 0
-                        player.ROUND_REW = 0
-                        player.ROUND_PEN = 0
+                        player.GAME_REW = 0
+                        player.GAME_PEN = 0
                     player.score = 0
                 self.step(None)
 
