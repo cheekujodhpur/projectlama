@@ -76,7 +76,6 @@ class NetworkGame(Game):
     def join_AI_player(self, player): #Takes input an object of NetworkPlayer to add to the game. Useful in adding already established AI's to a new game.
         if len(self.players) < 6:
         	self.players.append(player)
-        	return {"token": player_token, "alias": player_token}
         else:
         	return {"error": "Game is full. Can't add AI player"}
 
