@@ -16,7 +16,17 @@ var colorMap = {
     '5': '#16a085',
     '6': '#e67e22',
     '7': '#34495e'
-}
+};
+
+var imageMap = {
+    '1': 'one',
+    '2': 'two',
+    '3': 'three',
+    '4': 'four',
+    '5': 'five',
+    '6': 'six',
+    '7': 'llama'
+};
 
 function myTurnHandler(data) {
     var msg = "It is your turn. You can ";
@@ -137,8 +147,9 @@ function stateHandler(data) {
 };
 
 function renderCard(card, playable=false) {
-    bgStyle = 'style="background-image:linear-gradient(to right,' + colorMap[card] + ', #ddd)"'; 
-    card_text = card == '7' ? 'llama' : card;
+    var card_image_name = imageMap[card];
+    bgStyle = 'style="background-image: url(\'/client/img/' + card_image_name + '.png\'); background-size: cover"'; 
+    card_text = '';
     card_html = '<li ' + bgStyle + '>' + card_text + '</li>';
 
     jel = $(card_html);
