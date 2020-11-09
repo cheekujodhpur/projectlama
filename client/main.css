@@ -12,24 +12,50 @@
     list-style: none;
 }
 
-.l-cards li {
-    width: 150px;
-    height: 220px;
+.l-cards#l-hand {
+    display: flex;
+    list-style: none;
+    flex-wrap: wrap;
+}
+
+.l-cards#l-hand li {
+    width: 172px;
+    height: 240px;
     border-radius: 10px;
     -webkit-shadow: 3px 3px 7px rgba(0,0,0,0.3);
     box-shadow: 3px 3px 7px rgba(0,0,0,0.3);
     background-image: linear-gradient(to right, red, #fff);
     padding: 5px;
+    margin: 20px;
+    font:50px Georgia, Times New Roman, serif;
+    position: relative;
+}
 
+.l-cards li {
+    width: 172px;
+    height: 240px;
+    border-radius: 10px;
+    -webkit-shadow: 3px 3px 7px rgba(0,0,0,0.3);
+    box-shadow: 3px 3px 7px rgba(0,0,0,0.3);
+    background-image: linear-gradient(to right, red, #fff);
+    padding: 5px;
     font:50px Georgia, Times New Roman, serif;
 }
 
 #l-discard li:nth-child(n+2) {
-    margin-left:-120px;
+    margin-left: -120px;
 }
 
-#l-hand li:nth-child(n+2) {
-    margin-left:-70px;
+.l-multiple {
+    background-color: black;
+    border-radius: 10px;
+    color: white;
+    
+    padding: 1px 3px;
+    font: 14px Arial, Helvetica, sans-serif;
+    position: absolute;
+    top: -10px;
+    right: -10px;
 }
 
 #l-hand li:hover {

@@ -146,10 +146,14 @@ function stateHandler(data) {
 
 };
 
-function renderCard(card, playable=false) {
+function renderCard(card, count, playable=false) {
     var card_image_name = imageMap[card];
     bgStyle = 'style="background-image: url(\'/client/img/' + card_image_name + '.png\'); background-size: cover"'; 
-    card_text = '';
+    if (count === undefined) {
+      card_text = '';
+    } else {
+      card_text = '<span class="l-multiple">' + count + '</span>';
+    }
     card_html = '<li ' + bgStyle + '>' + card_text + '</li>';
 
     jel = $(card_html);
@@ -176,9 +180,10 @@ function renderDiscardPile(card, card_v) {
 };
 
 function renderHand(cards) {
+    let cardset = cards.sort().reduce(function(rv, x) {rv[x] = rv[x] || 0; rv[x] += 1; return rv;}, {});
     $("#l-hand").html('');
-    cards.forEach(function(card) {
-        card_html = renderCard(card, playable=true);
+    Object.entries(cardset).forEach(([card, count]) => {
+        card_html = renderCard(card, count, playable=true);
         $("#l-hand").append(card_html);
     });
 };
