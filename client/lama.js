@@ -174,7 +174,7 @@ function renderDiscardPile(card, card_v) {
         return;
 
     card_html = renderCard(card);
-    $("#l-discard").append(card_html);
+    $("#l-discard").html(card_html);
     discardPile_v = card_v;
 };
 
