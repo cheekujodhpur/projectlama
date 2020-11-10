@@ -5,7 +5,8 @@ var purl = 'http://localhost:1144';
 
 var stateMap = {
     'none': lobbyWaitHandler,
-    'round_running': roundRunHandler
+    'round_running': roundRunHandler,
+    'game_over': gameOverHandler
 };
 
 var colorMap = {
@@ -39,6 +40,18 @@ function myTurnHandler(data) {
 
     $("#l-lobby-message-container").html(msg);
 };
+
+function gameOverHandler(data) {
+  $("#l-new-game-button").removeClass("d-none");
+};
+
+function newGame() {
+  let cookie_list = [ "gameid", "playertoken", "started" ];
+  cookie_list.forEach(x => {
+      eraseCookie(x);
+  });
+  location.reload();
+}
 
 function roundRunHandler(data) {
     revealGame();
@@ -85,6 +98,7 @@ function lobbyWaitHandler(data) {
 };
 
 function defaultStateHandler(data) {
+    console.log(data);
     if ("error" in data) {
         alert(data.error);
     };

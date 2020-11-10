@@ -98,7 +98,7 @@ class NetworkGame(Game):
             if not sum(map(lambda x: x.active, self.players)):
                 return None, State.ROUND_END
 
-            player = self.turn 
+            player = self.turn
             deck = self.deck
             if player.active:
                 if not deck.playable(player.hand):
@@ -165,6 +165,7 @@ class NetworkGame(Game):
             self.state = new_state
             return self.get_info(prompt)
 
+
 class GameMaster(xmlrpc.XMLRPC):
     def __init__(self):
         self.games = {}
@@ -202,7 +203,7 @@ class GameMaster(xmlrpc.XMLRPC):
         if game_id not in self.games:
             return False
         elif player_token is not None:
-            search = sum(map(lambda x:x.token == player_token, self.games[game_id].players))
+            search = sum(map(lambda x: x.token == player_token, self.games[game_id].players))
             if not search:
                 return False
         return True
@@ -246,8 +247,11 @@ class GameMaster(xmlrpc.XMLRPC):
                 if len(game.input_wait_queue):
                     result["expected_action"] = game.input_wait_queue.pop()
 
+        if curr_state is State.GAME_END:
+            result["game_state"] = "game_over"
+
         if len(game.error_queue):
-            result["error"] = game.error_queue.pop() 
+            result["error"] = game.error_queue.pop()
 
         msg_for_player = game.global_message_queue[player.token]
         while len(msg_for_player):
