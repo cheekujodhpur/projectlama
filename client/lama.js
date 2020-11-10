@@ -148,18 +148,17 @@ function stateHandler(data) {
 
 function renderCard(card, count, playable=false) {
     var card_image_name = imageMap[card];
-    bgStyle = 'style="background-image: url(\'/client/img/' + card_image_name + '.png\'); background-size: cover"'; 
     if (count === undefined) {
       card_text = '';
     } else {
       card_text = '<span class="l-multiple">' + count + '</span>';
     }
-    card_html = '<li ' + bgStyle + '>' + card_text + '</li>';
+    card_html = '<li>' + card_text + '</li>';
 
     jel = $(card_html);
+    jel.attr('l-data', card);
     if (playable) {
         jel.attr('onclick', 'playCard(this)');
-        jel.attr('l-data', card);
     }
     return jel;
 }
